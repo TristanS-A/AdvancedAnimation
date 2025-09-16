@@ -298,6 +298,110 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 //****TO-DO-ANIM-PROJECT-2: IMPLEMENT ME
 //-----------------------------------------------------------------------------
 		//TODO  BOTH
+		//open file
+		FILE* pFile = fopen(resourceFilePath, "rb");
+
+		size_t read = 0, i = 0, j = 0, where = 0;
+		int pos[8] = { 0,0,0,0,0,0,0,0 };
+		char line[8][40];
+		char x = 10;
+		char buffer[4097];
+		int section = 0;
+		a3_HierarchyNode* tNode = NULL;
+		a3f32 **base, **rot, **arot, **trot;
+		a3f32 ang[3] = {0,0,0}, num = 0, den = 0;
+		a3byte eof = false;
+		int numSegments = 10;
+
+		base = (a3f32**) malloc(3 * sizeof(a3f32*));
+		rot = (a3f32**)malloc(3 * sizeof(a3f32*));
+		arot = (a3f32**)malloc(3 * sizeof(a3f32*));
+		trot = (a3f32**)malloc(3 * sizeof(a3f32*));
+
+		if (pFile)
+		{
+			read = fread(buffer, 1, 4096, pFile);
+			buffer[read] = '\0';
+			i = (size_t)strstr(buffer, "[HEADER]");
+			i += (size_t)strstr(buffer + i, &x);
+			while (buffer[i++] < 32);
+
+			where = pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5] = pos[6] = pos[7] = 0;
+
+			while (read && !eof)
+			{
+				while (i < read && !eof)
+				{
+					//UNTESTED
+					if (buffer[i] == '#' || buffer[i] == x)
+					{
+						//process line
+						line[1][pos[1]] = line[0][pos[0]] = '\0';
+
+						if (line[0][0] == '[')
+						{
+							if (++section == 2)
+							{
+								//add root node
+								//body structure
+								for (int j = 0; j < numSegments; j++)
+								{
+									if (strcmp(hierarchy_out->nodes[j].name, "GLOBAL"))
+									{
+
+									}
+
+								}
+							}
+						}
+						if (section > 2)
+						{
+							char temp[40];
+							j = 1;
+
+							while ((temp[j - 1] = line[0][j]) && line[0][j++] != ']')
+								temp[j - 1] = '\0';
+
+							tNode = 0;
+							int currentNode = 10; //fix me
+							for (j = 0; j < currentNode && !tNode; j++)
+							{
+
+							}
+							if (!tNode)
+							{
+								if (strcmp(temp, "EndOfFile"))
+								{
+									//BAD
+									fclose(pFile);
+								}
+								else
+								{
+									eof = true;
+								}
+							}
+						}
+					}
+					else if (line[0][0] && line[1][0])
+					{
+						if (!section)
+						{
+							//process header?
+							if (!strcmp(line[0], "FILETYPE"))
+							{
+
+							}
+							else
+							{
+
+							}
+
+						}
+					}
+					
+				}
+			}
+		}
 
 
 //-----------------------------------------------------------------------------
