@@ -287,6 +287,85 @@ a3i32 a3hierarchyStateUpdateObjectBindToCurrent(const a3_HierarchyState* state, 
 }
 
 
+a3byte ProcessHeader(char line[2][40], int pos[2])
+{
+	a3i32 numSegemnts;
+	if (strcmp(line[0], "FILETYPE"))
+	{
+		if (!strcmp(line[1], "HTR"))
+		{
+			printf("not correct file type");
+			return false;
+		}
+	}
+	else if (strcmp(line[0], "DATATYPE"))
+	{
+		if (!strcmp(line[1], "HTRS"))
+		{
+			//bad data
+		}
+	}
+	else if (strcmp(line[0], "FILEVERSION"))
+	{
+		if (atoi(line[1]) != 1)
+		{
+			//bad file
+			return false;
+		}
+	}
+	else if (strcmp(line[0], "NUMSEGMENTS"))
+	{
+		numSegemnts = atoi(line[1]);
+		//imcrease node list here
+		//set my current node
+		
+	}
+	else if(strcmp(line[0], "NUMFRAMES"))
+	{ }
+	else if(strcmp(line[0], "DATAFRAMERATE"))
+	{ }
+	else if(strcmp(line[0], "EULERROTATIONORDER"))
+	{
+		//do angle stuff
+		for (int i = 0; i < 3; i++)
+		{
+			switch (line[1][i] & 0xdf)
+			{
+			case'Z':
+				break;
+			case 'Y':
+				break;
+			case'X':
+				break;
+
+			}
+		}
+	}
+	else if (strcmp(line[0], "CALIBRATIONUNITS"))
+	{
+		//TODO add more mesurements
+		if (strcmp(line[1], "MM"))
+		{
+			//set calibration
+		}
+	}
+	else if (strcmp(line[0], "ROTATIONUNITS"))
+	{
+		//set rotaion units
+		if (strcmp(line[1], "DEGRESS"))
+		{
+			//set degress
+		}
+
+	}
+	else if (strcmp(line[0], "SCALEFACTOR"))
+	{
+		//set scale factor 
+	}
+	return true;
+
+}
+
 //-----------------------------------------------------------------------------
 
 // load HTR file, read and store complete pose group and hierarchy
@@ -304,7 +383,7 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 		size_t read = 0, i = 0, j = 0, where = 0;
 		int pos[8] = { 0,0,0,0,0,0,0,0 };
 		char line[8][40];
-		char x = 10;
+		char x = '\r';
 		char buffer[4097];
 		int section = 0;
 		a3_HierarchyNode* tNode = NULL;
@@ -353,105 +432,100 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 
 								}
 							}
+							if (section > 2)
+							{
+								char temp[40];
+								j = 1;
+
+								while ((temp[j - 1] = line[0][j]) && line[0][j++] != ']')
+									temp[j - 1] = '\0';
+
+								tNode = 0;
+								int currentNode = 10; //fix me
+								for (j = 0; j < currentNode && !tNode; j++)
+								{
+
+								}
+								if (!tNode)
+								{
+									if (strcmp(temp, "EndOfFile"))
+									{
+										//BAD
+										fclose(pFile);
+									}
+									else
+									{
+										eof = true;
+									}
+								}
+							}
 						}
-						if (section > 2)
+						else if (line[0][0] && line[1][0]) //line[1][0] needs to not have a space in it :3 but idk how to make it not do that
 						{
-							char temp[40];
-							j = 1;
-
-							while ((temp[j - 1] = line[0][j]) && line[0][j++] != ']')
-								temp[j - 1] = '\0';
-
-							tNode = 0;
-							int currentNode = 10; //fix me
-							for (j = 0; j < currentNode && !tNode; j++)
+							if (!section)
+							{
+								//process header?
+								if (!ProcessHeader(line, pos))
+								{
+									//somthing went wronng
+								}
+							}
+							else if (section == 1)
 							{
 
 							}
-							if (!tNode)
-							{
-								if (strcmp(temp, "EndOfFile"))
-								{
-									//BAD
-									fclose(pFile);
-								}
-								else
-								{
-									eof = true;
-								}
-							}
-						}
-					}
-					else if (line[0][0] && line[1][0])
-					{
-						if (!section)
-						{
-							//process header?
-							if (!strcmp(line[0], "FILETYPE"))
+							else if (section == 2)
 							{
 
+							}
+							else if (section > 2)
+							{
+
+							}
+						}
+
+						//this might be
+						j = (size_t)strstr(buffer + i, &x);
+						if (j == -1)
+						{
+							if (buffer[4095] != 10)
+							{
+								read = fread(buffer, 1, 4096, pFile);
+								i = (size_t)strstr(buffer, &x);
 							}
 							else
 							{
-
+								read = fread(buffer, 1, 4096, pFile);
+								i = 0;
 							}
-
-						}
-						else if (section == 1)
-						{
-
-						}
-						else if (section == 2)
-						{
-
-						}
-						else if (section > 2)
-						{
-
-						}
-					}
-
-					j = (size_t)strstr(buffer + i, &x);
-					if (j == -1)
-					{
-						if (buffer[4095] != 10)
-						{
-							read = fread(buffer, 1, 4096, pFile);
-							i = (size_t)strstr(buffer, &x);
+							buffer[4095] = '\0';
 						}
 						else
 						{
-							read = fread(buffer, 1, 4096, pFile);
-							i = 0;
+							i += j;
 						}
-						buffer[4095] = '\0';
+
+						where = pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5] = pos[6] = pos[7] = 0;
+					}
+					if (buffer[i] > 44 && buffer[i] < 123)
+					{
+						line[where][pos[where]++] = buffer[i++];
+					}
+					else if ((buffer[i] == 32 || buffer[i] == 9) && pos[where] > 0)
+					{
+						++where;
+						++i;
 					}
 					else
 					{
-						i += j;
+						++i;
 					}
-
-					where = pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5] = pos[6] = pos[7] = 0;
-					
 				}
-				if (buffer[i] > 44 && buffer[i] < 123)
-				{
-					line[where][pos[where]++] = buffer[i++];
-				}
-				else if((buffer[i] == 32 || buffer[i] ==9 ) && pos[where] > 0)
-				{
-					++where;
-					++i;
-				}
-				else
-				{
-					++i;
-				}
+				read = fread(buffer, 1, 4069, pFile);
+				buffer[4096] = '\0';
+				i = 0;
 			}
-			read = fread(buffer, 1, 4069, pFile);
-			buffer[4096] = '\0';
-			i = 0;
-
+			//more stuff! AAAAAAAAAAAAAAAAAAA
 		}
 
 		fclose(pFile);
