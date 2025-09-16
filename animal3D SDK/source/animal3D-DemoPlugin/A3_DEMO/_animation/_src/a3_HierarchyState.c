@@ -276,7 +276,7 @@ a3i32 a3hierarchyStateUpdateObjectBindToCurrent(const a3_HierarchyState* state, 
 //****TO-DO-ANIM-PROJECT-2: IMPLEMENT ME
 //-----------------------------------------------------------------------------
 		//TODO WILL
-
+		
 
 //-----------------------------------------------------------------------------
 //****END-TO-DO-PROJECT-2
