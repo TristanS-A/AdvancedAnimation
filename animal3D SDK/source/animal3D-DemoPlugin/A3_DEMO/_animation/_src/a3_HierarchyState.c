@@ -397,11 +397,64 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 							}
 
 						}
+						else if (section == 1)
+						{
+
+						}
+						else if (section == 2)
+						{
+
+						}
+						else if (section > 2)
+						{
+
+						}
 					}
+
+					j = (size_t)strstr(buffer + i, &x);
+					if (j == -1)
+					{
+						if (buffer[4095] != 10)
+						{
+							read = fread(buffer, 1, 4096, pFile);
+							i = (size_t)strstr(buffer, &x);
+						}
+						else
+						{
+							read = fread(buffer, 1, 4096, pFile);
+							i = 0;
+						}
+						buffer[4095] = '\0';
+					}
+					else
+					{
+						i += j;
+					}
+
+					where = pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5] = pos[6] = pos[7] = 0;
 					
 				}
+				if (buffer[i] > 44 && buffer[i] < 123)
+				{
+					line[where][pos[where]++] = buffer[i++];
+				}
+				else if((buffer[i] == 32 || buffer[i] ==9 ) && pos[where] > 0)
+				{
+					++where;
+					++i;
+				}
+				else
+				{
+					++i;
+				}
 			}
+			read = fread(buffer, 1, 4069, pFile);
+			buffer[4096] = '\0';
+			i = 0;
+
 		}
+
+		fclose(pFile);
 
 
 //-----------------------------------------------------------------------------
