@@ -287,83 +287,125 @@ a3i32 a3hierarchyStateUpdateObjectBindToCurrent(const a3_HierarchyState* state, 
 }
 
 
-a3byte ProcessHeader(char line[2][40], int pos[2])
+a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile)
 {
-	a3i32 numSegemnts;
-	if (strcmp(line[0], "FILETYPE"))
-	{
-		if (!strcmp(line[1], "HTR"))
-		{
-			printf("not correct file type");
-			return false;
-		}
-	}
-	else if (strcmp(line[0], "DATATYPE"))
-	{
-		if (!strcmp(line[1], "HTRS"))
-		{
-			//bad data
-		}
-	}
-	else if (strcmp(line[0], "FILEVERSION"))
-	{
-		if (atoi(line[1]) != 1)
-		{
-			//bad file
-			return false;
-		}
-	}
-	else if (strcmp(line[0], "NUMSEGMENTS"))
-	{
-		numSegemnts = atoi(line[1]);
-		//imcrease node list here
-		//set my current node
-		
-	}
-	else if(strcmp(line[0], "NUMFRAMES"))
-	{ }
-	else if(strcmp(line[0], "DATAFRAMERATE"))
-	{ }
-	else if(strcmp(line[0], "EULERROTATIONORDER"))
-	{
-		//do angle stuff
-		for (int i = 0; i < 3; i++)
-		{
-			switch (line[1][i] & 0xdf)
-			{
-			case'Z':
-				break;
-			case 'Y':
-				break;
-			case'X':
-				break;
+	//Reset currLine determining char
+	currLine[0] = ' ';
 
+	//Defines header buffer to use sscanf properly
+	char header[50];
+	char value[50];
+
+	//Continues processing headers until next type of data is detected
+	while (currLine[0] != '[' && currLine[0] != '#')
+	{
+		//Gets next line to process
+		fgets(currLine, 4079, pFile);
+
+		//Seperates the header from the value (this only works for a header with no spaces and a single value per header)
+		//Can also have used sscanf(currLine, "%s %d", header, &fileV) instead of this
+		int prevSpaceIndex = 0;
+		header[0] = -52;  //Resets header and value processing
+		value[0] = -52;
+		for (int i = 0; i < currLineLength; i++)
+		{
+			if (currLine[i] == ' ' || currLine[i] == '\r')
+			{
+				if (header[0] == -52)
+				{
+					strncpy(header, currLine + prevSpaceIndex, i - prevSpaceIndex);
+				}
+				else if (value[0] == -52)
+				{
+					strncpy(value, currLine + prevSpaceIndex, i - prevSpaceIndex);
+				}
+				else
+				{
+					break;
+				}
+
+				prevSpaceIndex = i;
 			}
 		}
-	}
-	else if (strcmp(line[0], "CALIBRATIONUNITS"))
-	{
-		//TODO add more mesurements
-		if (strcmp(line[1], "MM"))
-		{
-			//set calibration
-		}
-	}
-	else if (strcmp(line[0], "ROTATIONUNITS"))
-	{
-		//set rotaion units
-		if (strcmp(line[1], "DEGRESS"))
-		{
-			//set degress
-		}
 
+		//Process headers
+		if (strstr(header, "FileType"))
+		{
+			if (!strstr(value, "HTR"))
+			{
+				printf("not correct file type");
+				return false;
+			}
+		}
+		else if (strstr(header, "DataType"))
+		{
+			if (!strstr(value, "HTRS"))
+			{
+				//bad data
+			}
+		}
+		else if (strstr(header, "FileVersion"))
+		{
+			if (atoi(value) != 1)
+			{
+				//bad file
+				return false;
+			}
+		}
+		else if (strstr(currLine, "NUMSEGMENTS"))
+		{
+			//numSegemnts = atoi(line[1]);
+			//imcrease node list here
+			//set my current node
+
+		}
+		else if (strstr(currLine, "NUMFRAMES"))
+		{
+		}
+		else if (strstr(currLine, "DATAFRAMERATE"))
+		{
+		}
+		else if (strstr(currLine, "EULERROTATIONORDER"))
+		{
+			//do angle stuff
+			/*for (int i = 0; i < 3; i++)
+			{
+				switch (line[1][i] & 0xdf)
+				{
+				case'Z':
+					break;
+				case 'Y':
+					break;
+				case'X':
+					break;
+
+				}
+			}*/
+		}
+		else if (strstr(currLine, "CALIBRATIONUNITS"))
+		{
+			//TODO add more mesurements
+			//if (strcmp(line[1], "MM"))
+			{
+				//set calibration
+			}
+		}
+		else if (strstr(currLine, "ROTATIONUNITS"))
+		{
+			//set rotaion units
+			//if (strcmp(line[1], "DEGRESS"))
+			{
+				//set degress
+			}
+
+		}
+		else if (strstr(currLine, "SCALEFACTOR"))
+		{
+			//set scale factor 
+		}
 	}
-	else if (strcmp(line[0], "SCALEFACTOR"))
-	{
-		//set scale factor 
-	}
+
 	return true;
-
 }
 
 //-----------------------------------------------------------------------------
@@ -380,7 +422,38 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 		//open file
 		FILE* pFile = fopen(resourceFilePath, "rb");
 
-		size_t read = 0, i = 0, j = 0, where = 0;
+		int lineLength = 4097;
+		char currLine[4097];
+
+		if (pFile)
+		{
+			fgets(currLine, lineLength, pFile);
+			while (!feof(pFile))
+			{
+				if (strstr(currLine, "[Header]"))
+				{
+					if (!ProcessHeaders(currLine, lineLength, pFile))
+					{
+						//Could not be loaded
+						return -1;
+					}
+				}
+				else if (strstr(currLine, "[SegmentNames&Hierarchy]"))
+				{
+					//Do segment names and hierarchy stuff
+				}
+				else if (strstr(currLine, "[BasePosition]"))
+				{
+					//Do base position stuff
+				}
+				else if (currLine[0] == '#')
+				{
+					//Process animation
+				}
+			}
+		}
+
+		/*size_t read = 0, i = 0, j = 0, where = 0;
 		int pos[8] = { 0,0,0,0,0,0,0,0 };
 		char line[8][40];
 		char x = '\r';
@@ -465,7 +538,7 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 							if (!section)
 							{
 								//process header?
-								if (!ProcessHeader(line, pos))
+								//if (!ProcessHeaders(line, pos))
 								{
 									//somthing went wronng
 								}
@@ -526,7 +599,7 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 				i = 0;
 			}
 			//more stuff! AAAAAAAAAAAAAAAAAAA
-		}
+		}*/
 
 		fclose(pFile);
 
