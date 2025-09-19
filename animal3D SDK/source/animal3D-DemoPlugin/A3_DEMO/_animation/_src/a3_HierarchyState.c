@@ -286,8 +286,8 @@ a3i32 a3hierarchyStateUpdateObjectBindToCurrent(const a3_HierarchyState* state, 
 	return -1;
 }
 
-
-a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile)
+//TODO change to cammal case
+a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_HierarchyPoseGroup* group, a3_Hierarchy* h)
 {
 	//Reset currLine determining char
 	currLine[0] = ' ';
@@ -309,7 +309,7 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile)
 		value[0] = -52;
 		for (int i = 0; i < currLineLength; i++)
 		{
-			if (currLine[i] == ' ' || currLine[i] == '\r')
+			if (currLine[i] == ' ' || currLine[i] == '\r' || currLine[i] == -52)
 			{
 				if (header[0] == -52)
 				{
@@ -318,6 +318,7 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile)
 				else if (value[0] == -52)
 				{
 					strncpy(value, currLine + prevSpaceIndex, i - prevSpaceIndex);
+
 				}
 				else
 				{
@@ -352,52 +353,40 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile)
 				return false;
 			}
 		}
-		else if (strstr(currLine, "NUMSEGMENTS"))
+		else if (strstr(header, "NumSegments"))
 		{
-			//numSegemnts = atoi(line[1]);
+
+			a3byte** dummy = NULL;
+			a3ui32 ammount = (a3ui32)atoi(value);
+			a3hierarchyCreate(h, ammount, dummy);
 			//imcrease node list here
 			//set my current node
 
 		}
-		else if (strstr(currLine, "NUMFRAMES"))
+		else if (strstr(currLine, "NumFrames"))
 		{
+			group->hposeCount = (a3ui32)atoi(currLine);
+	
 		}
-		else if (strstr(currLine, "DATAFRAMERATE"))
+		else if (strstr(currLine, "DataFrameRate"))
 		{
+			//TODO
 		}
 		else if (strstr(currLine, "EULERROTATIONORDER"))
 		{
-			//do angle stuff
-			/*for (int i = 0; i < 3; i++)
+			if (strstr(currLine, "ZYX"))
 			{
-				switch (line[1][i] & 0xdf)
-				{
-				case'Z':
-					break;
-				case 'Y':
-					break;
-				case'X':
-					break;
-
-				}
-			}*/
+	
+			}
 		}
 		else if (strstr(currLine, "CALIBRATIONUNITS"))
 		{
 			//TODO add more mesurements
-			//if (strcmp(line[1], "MM"))
-			{
-				//set calibration
-			}
 		}
 		else if (strstr(currLine, "ROTATIONUNITS"))
 		{
-			//set rotaion units
-			//if (strcmp(line[1], "DEGRESS"))
-			{
-				//set degress
-			}
-
+			//TODO
+			if (!strstr(currLine, "Degrees"));
 		}
 		else if (strstr(currLine, "SCALEFACTOR"))
 		{
@@ -406,6 +395,27 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile)
 	}
 
 	return true;
+}
+
+a3byte ProcessSegmentsAndHeirarchy(char* currLine, int currLintLenght, FILE* pFile, a3_HierarchyPoseGroup* group, a3_Hierarchy* h)
+{
+	char parent[a3node_nameSize];
+	char child[a3node_nameSize];
+
+	a3_HierarchyNode* parentNode = NULL;
+
+	h->nodes = (a3_HierarchyNode*) malloc(h->numNodes * sizeof(a3_HierarchyNode));
+	while (currLine[0] != '[' && currLine[0] != '#')
+	{
+		sscanf(currLine, "%s %s", &child, &parent);
+		a3_HierarchyNode* childNode = (a3_HierarchyNode*)malloc(sizeof(a3_HierarchyNode));
+
+		strncpy(childNode->name, child, a3node_nameSize);
+
+		
+	}
+
+	return 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -432,7 +442,7 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 			{
 				if (strstr(currLine, "[Header]"))
 				{
-					if (!ProcessHeaders(currLine, lineLength, pFile))
+					if (!ProcessHeaders(currLine, lineLength, pFile, poseGroup_out, hierarchy_out))
 					{
 						//Could not be loaded
 						return -1;
@@ -441,6 +451,10 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 				else if (strstr(currLine, "[SegmentNames&Hierarchy]"))
 				{
 					//Do segment names and hierarchy stuff
+					if (ProcessSegmentsAndHeirarchy(currLine, lineLength, pFile, poseGroup_out, hierarchy_out))
+					{
+
+					}
 				}
 				else if (strstr(currLine, "[BasePosition]"))
 				{
