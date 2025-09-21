@@ -300,7 +300,7 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 	while (currLine[0] != '[' && currLine[0] != '#')
 	{
 		//Gets next line to process
-		fgets(currLine, 4079, pFile);
+		fgets(currLine, currLineLength, pFile);
 
 		//Seperates the header from the value (this only works for a header with no spaces and a single value per header)
 		//Can also have used sscanf(currLine, "%s %d", header, &fileV) instead of this
@@ -343,6 +343,7 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 			if (!strstr(value, "HTRS"))
 			{
 				//bad data
+				return false;
 			}
 		}
 		else if (strstr(header, "FileVersion"))
@@ -356,12 +357,9 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 		else if (strstr(header, "NumSegments"))
 		{
 
-			a3byte** dummy = NULL;
-			a3ui32 ammount = (a3ui32)atoi(value);
-			a3hierarchyCreate(h, ammount, dummy);
-			//imcrease node list here
-			//set my current node
-
+			a3ui32 amount = (a3ui32)atoi(value);
+			a3hierarchyCreate(h, amount, NULL);
+			a3hierarchyPoseGroupCreate(group, h, amount);
 		}
 		else if (strstr(currLine, "NumFrames"))
 		{
@@ -372,23 +370,38 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 		{
 			//TODO
 		}
-		else if (strstr(currLine, "EULERROTATIONORDER"))
+		else if (strstr(currLine, "EulerRotationOrder"))
 		{
 			if (strstr(currLine, "ZYX"))
 			{
-	
+				//group->order = a3poseEulerOrder_zyx;
+			}
+			else if (strstr(currLine, "XYZ"))
+			{
+				group->order = a3poseEulerOrder_xyz;
 			}
 		}
-		else if (strstr(currLine, "CALIBRATIONUNITS"))
+		else if (strstr(currLine, "CalibrationUnits"))
 		{
 			//TODO add more mesurements
 		}
-		else if (strstr(currLine, "ROTATIONUNITS"))
+		else if (strstr(currLine, "RotationUnits"))
 		{
 			//TODO
-			if (!strstr(currLine, "Degrees"));
+			if (!strstr(currLine, "Degrees")) 
+			{
+
+			}
 		}
-		else if (strstr(currLine, "SCALEFACTOR"))
+		else if (strstr(currLine, "GlobalAxisofGravity"))
+		{
+			//set scale factor 
+		}
+		else if (strstr(currLine, "BoneLengthAxis"))
+		{
+			//set scale factor 
+		}
+		else if (strstr(currLine, "ScaleFactor"))
 		{
 			//set scale factor 
 		}
@@ -397,25 +410,64 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 	return true;
 }
 
-a3byte ProcessSegmentsAndHeirarchy(char* currLine, int currLintLenght, FILE* pFile, a3_HierarchyPoseGroup* group, a3_Hierarchy* h)
+a3byte ProcessSegmentsAndHeirarchy(char* currLine, int currLintLength, FILE* pFile, a3_Hierarchy* h)
 {
 	char parent[a3node_nameSize];
 	char child[a3node_nameSize];
 
-	a3_HierarchyNode* parentNode = NULL;
+	//Reset currLine determining char
+	currLine[0] = ' ';
 
-	h->nodes = (a3_HierarchyNode*) malloc(h->numNodes * sizeof(a3_HierarchyNode));
+	a3i32 i = 0;
+	a3i32 parentIndex = 0;
 	while (currLine[0] != '[' && currLine[0] != '#')
 	{
+		//Gets next line to process
+		fgets(currLine, currLintLength, pFile);
+
+		//Reads child and parent names
 		sscanf(currLine, "%s %s", &child, &parent);
-		a3_HierarchyNode* childNode = (a3_HierarchyNode*)malloc(sizeof(a3_HierarchyNode));
 
-		strncpy(childNode->name, child, a3node_nameSize);
+		//Gets parent index
+		parentIndex = a3hierarchyGetNodeIndex(h, parent);
 
-		
+		//Sets current node
+		a3hierarchySetNode(h, i, parentIndex, child);
+
+		i++;
 	}
 
-	return 1;
+	return true;
+}
+
+a3byte ProcessBasePositions(char* currLine, int currLintLength, FILE* pFile, a3_HierarchyPoseGroup* group, a3_Hierarchy* h)
+{
+	//Reset currLine determining char
+	currLine[0] = ' ';
+
+	char name[a3node_nameSize];
+	a3vec3 pos;
+	a3vec3 rot;
+	a3f32 scale;
+
+	while (currLine[0] != '[' && currLine[0] != '#')
+	{
+		//Gets next line to process
+		fgets(currLine, currLintLength, pFile);
+
+		//Reads base pose data
+		sscanf(currLine, "%s %f %f %f %f %f %f %f", name, &pos.x, &pos.y, &pos.z, &rot.x, &rot.y, &rot.z, &scale);
+
+		//Gets index of node's spacial pose
+		a3i32 nodeIndex = a3hierarchyGetNodeIndex(h, name);
+
+		//Sets the spacial pose data
+		a3spatialPoseSetTranslation(&group->hpose->hpose_base[nodeIndex], pos.x, pos.y, pos.z);
+		a3spatialPoseSetRotation(&group->hpose->hpose_base[nodeIndex], rot.x, rot.y, rot.z);
+		a3spatialPoseSetScale(&group->hpose->hpose_base[nodeIndex], scale, scale, scale);
+	}
+
+	return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -451,14 +503,20 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 				else if (strstr(currLine, "[SegmentNames&Hierarchy]"))
 				{
 					//Do segment names and hierarchy stuff
-					if (ProcessSegmentsAndHeirarchy(currLine, lineLength, pFile, poseGroup_out, hierarchy_out))
+					if (!ProcessSegmentsAndHeirarchy(currLine, lineLength, pFile, hierarchy_out))
 					{
-
+						//Issue with name and segment loading
+						return -1;
 					}
 				}
 				else if (strstr(currLine, "[BasePosition]"))
 				{
 					//Do base position stuff
+					if (ProcessBasePositions(currLine, lineLength, pFile, poseGroup_out, hierarchy_out))
+					{
+						//Issue with name and segment loading
+						return -1;
+					}
 				}
 				else if (currLine[0] == '#')
 				{
