@@ -46,6 +46,8 @@ a3i32 a3spatialPoseConvert(a3_SpatialPose* spatialPose, const a3_SpatialPoseChan
 			a3trigValid_sind(spatialPose->rotate.y), 
 			a3trigValid_sind(spatialPose->rotate.z));
 
+
+			
 		//**** DO THIS EVERWHERE IN THIS FILE 
 		// -> make sure rotation angles are within [-360, +360]
 

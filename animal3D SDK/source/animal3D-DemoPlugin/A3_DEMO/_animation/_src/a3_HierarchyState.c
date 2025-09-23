@@ -275,8 +275,12 @@ a3i32 a3hierarchyStateUpdateObjectBindToCurrent(const a3_HierarchyState* state, 
 //-----------------------------------------------------------------------------
 //****TO-DO-ANIM-PROJECT-2: IMPLEMENT ME
 //-----------------------------------------------------------------------------
-		//TODO WILL
-		
+		//TODO WILL ?????????????????
+
+		for (i = 0; i < state->hierarchy->numNodes; i++)
+		{
+			a3real4x4TransformInverse(state->objectSpaceBindToCurrent->hpose_base[i].transformMat.m, state_bind->objectSpace->hpose_base[i].transformMat.m);
+		}
 
 //-----------------------------------------------------------------------------
 //****END-TO-DO-PROJECT-2
@@ -359,12 +363,12 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 
 			a3ui32 amount = (a3ui32)atoi(value);
 			a3hierarchyCreate(h, amount, NULL);
-			a3hierarchyPoseGroupCreate(group, h, amount);
+			
 		}
 		else if (strstr(currLine, "NumFrames"))
 		{
-			group->hposeCount = (a3ui32)atoi(currLine);
-	
+			a3hierarchyPoseGroupCreate(group, h, (a3ui32)atoi(value));
+
 		}
 		else if (strstr(currLine, "DataFrameRate"))
 		{
@@ -450,6 +454,7 @@ a3byte ProcessBasePositions(char* currLine, int currLintLength, FILE* pFile, a3_
 	a3vec3 rot;
 	a3f32 scale;
 
+
 	while (currLine[0] != '[' && currLine[0] != '#')
 	{
 		//Gets next line to process
@@ -461,11 +466,86 @@ a3byte ProcessBasePositions(char* currLine, int currLintLength, FILE* pFile, a3_
 		//Gets index of node's spacial pose
 		a3i32 nodeIndex = a3hierarchyGetNodeIndex(h, name);
 
+		if (nodeIndex < 0)
+		{
+			//somthing bad happend
+			break;
+		}
 		//Sets the spacial pose data
-		a3spatialPoseSetTranslation(&group->hpose->hpose_base[nodeIndex], pos.x, pos.y, pos.z);
-		a3spatialPoseSetRotation(&group->hpose->hpose_base[nodeIndex], rot.x, rot.y, rot.z);
-		a3spatialPoseSetScale(&group->hpose->hpose_base[nodeIndex], scale, scale, scale);
+		//a3ui32 startIndex = group->hpose->hpose_index;
+		//applays base position to the first indexs?
+		a3spatialPoseSetTranslation(&group->hpose[nodeIndex].hpose_base[0], pos.x, pos.y, pos.z);
+		a3spatialPoseSetRotation(&group->hpose[nodeIndex].hpose_base[0], rot.x, rot.y, rot.z);
+		a3spatialPoseSetScale(&group->hpose[nodeIndex].hpose_base[0], scale, scale, scale);
 	}
+
+	return true;
+}
+
+
+a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_HierarchyPoseGroup* group, a3_Hierarchy* h)
+{
+
+	//get first hash
+	//int lastIndex;
+	fgets(currLine, currLintLength, pFile);
+
+	while (currLine[0] != EOF)
+	{
+		if (currLine[0] == '#')
+		{
+			return false;//apply some offset here
+		}
+
+		//get the animation name
+		int count = 0;
+		//this needs to be move to out side of this loop
+
+		char read[100];
+		
+		//scrub the name
+		for (int i = 0; i < currLintLength; i++)
+		{
+			if (currLine[i] == '\r')
+			{
+				read[count] = '\0';
+				break;
+			}
+
+			if (currLine[i] != '[' && currLine[i] != ']')
+			{
+				read[count] = currLine[i];
+				count++;
+
+			}
+
+		}
+
+		a3i32 nodeIndex = a3hierarchyGetNodeIndex(h, read);
+		int index;
+		fgets(currLine, currLintLength, pFile);
+		int numNodes = h->numNodes;
+		while (currLine[0] != '[' && currLine[0] != '#')
+		{
+			
+			a3vec3 pos;
+			a3vec3 rot;
+			a3f32 scale;
+			//get the current name 
+
+			sscanf(currLine, "%i %f %f %f %f %f %f %f", &index, &pos.x, &pos.y, &pos.z, &rot.x, &rot.y, &rot.z, &scale);
+
+			a3spatialPoseSetTranslation(&group->pose[(numNodes * nodeIndex) + index], pos.x, pos.y, pos.z);
+			a3spatialPoseSetRotation(&group->pose[(numNodes * nodeIndex) + index], rot.x, rot.y, rot.z);
+			a3spatialPoseSetScale(&group->pose[(numNodes * nodeIndex) + index], scale, scale, scale);
+
+			//progress line
+			fgets(currLine, currLintLength, pFile);
+		}
+		break;
+	}
+		
+		//get animation name
 
 	return true;
 }
@@ -499,6 +579,7 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 						//Could not be loaded
 						return -1;
 					}
+					
 				}
 				else if (strstr(currLine, "[SegmentNames&Hierarchy]"))
 				{
@@ -512,7 +593,7 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 				else if (strstr(currLine, "[BasePosition]"))
 				{
 					//Do base position stuff
-					if (ProcessBasePositions(currLine, lineLength, pFile, poseGroup_out, hierarchy_out))
+					if (!ProcessBasePositions(currLine, lineLength, pFile, poseGroup_out, hierarchy_out))
 					{
 						//Issue with name and segment loading
 						return -1;
@@ -520,158 +601,16 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 				}
 				else if (currLine[0] == '#')
 				{
+					if (!ProcessPoses(currLine, lineLength, pFile, poseGroup_out, hierarchy_out))
+					{
+						return -1;
+					}
+					break;
 					//Process animation
 				}
+				
 			}
 		}
-
-		/*size_t read = 0, i = 0, j = 0, where = 0;
-		int pos[8] = { 0,0,0,0,0,0,0,0 };
-		char line[8][40];
-		char x = '\r';
-		char buffer[4097];
-		int section = 0;
-		a3_HierarchyNode* tNode = NULL;
-		a3f32 **base, **rot, **arot, **trot;
-		a3f32 ang[3] = {0,0,0}, num = 0, den = 0;
-		a3byte eof = false;
-		int numSegments = 10;
-
-		base = (a3f32**) malloc(3 * sizeof(a3f32*));
-		rot = (a3f32**)malloc(3 * sizeof(a3f32*));
-		arot = (a3f32**)malloc(3 * sizeof(a3f32*));
-		trot = (a3f32**)malloc(3 * sizeof(a3f32*));
-
-		if (pFile)
-		{
-			read = fread(buffer, 1, 4096, pFile);
-			buffer[read] = '\0';
-			i = (size_t)strstr(buffer, "[HEADER]");
-			i += (size_t)strstr(buffer + i, &x);
-			while (buffer[i++] < 32);
-
-			where = pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5] = pos[6] = pos[7] = 0;
-
-			while (read && !eof)
-			{
-				while (i < read && !eof)
-				{
-					//UNTESTED
-					if (buffer[i] == '#' || buffer[i] == x)
-					{
-						//process line
-						line[1][pos[1]] = line[0][pos[0]] = '\0';
-
-						if (line[0][0] == '[')
-						{
-							if (++section == 2)
-							{
-								//add root node
-								//body structure
-								for (int j = 0; j < numSegments; j++)
-								{
-									if (strcmp(hierarchy_out->nodes[j].name, "GLOBAL"))
-									{
-
-									}
-
-								}
-							}
-							if (section > 2)
-							{
-								char temp[40];
-								j = 1;
-
-								while ((temp[j - 1] = line[0][j]) && line[0][j++] != ']')
-									temp[j - 1] = '\0';
-
-								tNode = 0;
-								int currentNode = 10; //fix me
-								for (j = 0; j < currentNode && !tNode; j++)
-								{
-
-								}
-								if (!tNode)
-								{
-									if (strcmp(temp, "EndOfFile"))
-									{
-										//BAD
-										fclose(pFile);
-									}
-									else
-									{
-										eof = true;
-									}
-								}
-							}
-						}
-						else if (line[0][0] && line[1][0]) //line[1][0] needs to not have a space in it :3 but idk how to make it not do that
-						{
-							if (!section)
-							{
-								//process header?
-								//if (!ProcessHeaders(line, pos))
-								{
-									//somthing went wronng
-								}
-							}
-							else if (section == 1)
-							{
-
-							}
-							else if (section == 2)
-							{
-
-							}
-							else if (section > 2)
-							{
-
-							}
-						}
-
-						//this might be
-						j = (size_t)strstr(buffer + i, &x);
-						if (j == -1)
-						{
-							if (buffer[4095] != 10)
-							{
-								read = fread(buffer, 1, 4096, pFile);
-								i = (size_t)strstr(buffer, &x);
-							}
-							else
-							{
-								read = fread(buffer, 1, 4096, pFile);
-								i = 0;
-							}
-							buffer[4095] = '\0';
-						}
-						else
-						{
-							i += j;
-						}
-
-						where = pos[0] = pos[1] = pos[2] = pos[3] = pos[4] = pos[5] = pos[6] = pos[7] = 0;
-					}
-					if (buffer[i] > 44 && buffer[i] < 123)
-					{
-						line[where][pos[where]++] = buffer[i++];
-					}
-					else if ((buffer[i] == 32 || buffer[i] == 9) && pos[where] > 0)
-					{
-						++where;
-						++i;
-					}
-					else
-					{
-						++i;
-					}
-				}
-				read = fread(buffer, 1, 4069, pFile);
-				buffer[4096] = '\0';
-				i = 0;
-			}
-			//more stuff! AAAAAAAAAAAAAAAAAAA
-		}*/
 
 		fclose(pFile);
 
@@ -680,7 +619,7 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 //****END-TO-DO-PROJECT-2
 //-----------------------------------------------------------------------------
 	}
-	return -1;
+	return 1;
 }
 
 // load BVH file, read and store complete pose group and hierarchy
