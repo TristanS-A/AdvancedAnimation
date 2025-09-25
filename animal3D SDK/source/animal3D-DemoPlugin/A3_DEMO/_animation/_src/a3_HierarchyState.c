@@ -454,7 +454,7 @@ a3byte ProcessBasePositions(char* currLine, int currLintLength, FILE* pFile, a3_
 	a3vec3 rot;
 	a3f32 scale;
 
-
+	int counter = 0;
 	while (currLine[0] != '[' && currLine[0] != '#')
 	{
 		//Gets next line to process
@@ -474,10 +474,17 @@ a3byte ProcessBasePositions(char* currLine, int currLintLength, FILE* pFile, a3_
 		//Sets the spacial pose data
 		//a3ui32 startIndex = group->hpose->hpose_index;
 		//applays base position to the first indexs?
-		a3spatialPoseSetTranslation(&group->hpose[nodeIndex].hpose_base[0], pos.x, pos.y, pos.z);
-		a3spatialPoseSetRotation(&group->hpose[nodeIndex].hpose_base[0], rot.x, rot.y, rot.z);
-		a3spatialPoseSetScale(&group->hpose[nodeIndex].hpose_base[0], scale, scale, scale);
+
+		
+		nodeIndex  = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, counter, nodeIndex);
+		a3spatialPoseSetTranslation(&group->hpose[0].hpose_base[nodeIndex + counter], pos.x, pos.y, pos.z);
+		a3spatialPoseSetRotation(&group->hpose[0].hpose_base[nodeIndex + counter], rot.x, rot.y, rot.z);
+		a3spatialPoseSetScale(&group->hpose[0].hpose_base[nodeIndex + counter], scale, scale, scale);
+		group->hpose[0].hpose_index = nodeIndex;
+		counter++;
 	}
+
+	//group->hposeCount = counter;
 
 	return true;
 }
@@ -485,24 +492,30 @@ a3byte ProcessBasePositions(char* currLine, int currLintLength, FILE* pFile, a3_
 
 a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_HierarchyPoseGroup* group, a3_Hierarchy* h)
 {
-
-	//get first hash
-	//int lastIndex;
+	//currently gets all of the animataions and over writes them
 	fgets(currLine, currLintLength, pFile);
+	
 
-	while (currLine[0] != EOF)
+	while (!feof(pFile))
 	{
 		if (currLine[0] == '#')
 		{
-			return false;//apply some offset here
+			fgets(currLine, currLintLength, pFile);
+			fgets(currLine, currLintLength, pFile);
+
+			//if (feof(pFile))
+			//{
+			//	return 1;
+			//}
+			////return false;//apply some offset here
+
+			return 1;
 		}
 
 		//get the animation name
 		int count = 0;
 		//this needs to be move to out side of this loop
-
 		char read[100];
-		
 		//scrub the name
 		for (int i = 0; i < currLintLength; i++)
 		{
@@ -520,31 +533,59 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 			}
 
 		}
-
-		a3i32 nodeIndex = a3hierarchyGetNodeIndex(h, read);
-		int index;
+		
+		//int testCounter;
 		fgets(currLine, currLintLength, pFile);
-		int numNodes = h->numNodes;
 		while (currLine[0] != '[' && currLine[0] != '#')
 		{
 			
 			a3vec3 pos;
 			a3vec3 rot;
 			a3f32 scale;
+			a3ui32 index = 0;
 			//get the current name 
 
 			sscanf(currLine, "%i %f %f %f %f %f %f %f", &index, &pos.x, &pos.y, &pos.z, &rot.x, &rot.y, &rot.z, &scale);
 
-			a3spatialPoseSetTranslation(&group->pose[(numNodes * nodeIndex) + index], pos.x, pos.y, pos.z);
-			a3spatialPoseSetRotation(&group->pose[(numNodes * nodeIndex) + index], rot.x, rot.y, rot.z);
-			a3spatialPoseSetScale(&group->pose[(numNodes * nodeIndex) + index], scale, scale, scale);
+			//get our current offset with repsect to our pose group  (in this case 1)
 
+			/*
+			* for this off set thing I think it works this way
+			* 
+			* 
+			* the  hpose[] is a array of the array of the posese for a animation
+			* hpose[]->hbase_pose[] is a array contaning a pointer to the first index of the array in the pos pool
+			* 
+			* pose[] is the array of ALL posese
+			* 
+			* so how  i think this should work is.
+			* 
+			* hpose[1]->hpose_index. once we get the index then we use it with the offest and populate it 
+			* 
+			* repeate till all animas are filled
+			* 
+			* 
+			*/
+
+
+
+
+			/*a3hierarchyPoseGroupGetPoseOffsetIndex();
+			
+			a3spatialPoseSetTranslation();	
+			a3spatialPoseSetRotation();
+			a3spatialPoseSetScale();*/
+
+			
 			//progress line
 			fgets(currLine, currLintLength, pFile);
+			//testCounter++;
 		}
-		break;
-	}
+
+		//the hpose is the currect pose group for a animation and base is a pointer to a animation
 		
+	}
+	
 		//get animation name
 
 	return true;
@@ -605,8 +646,8 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 					{
 						return -1;
 					}
-					break;
 					//Process animation
+					break;
 				}
 				
 			}
