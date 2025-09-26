@@ -476,12 +476,11 @@ a3byte ProcessBasePositions(char* currLine, int currLintLength, FILE* pFile, a3_
 		//applays base position to the first indexs?
 
 		
-		nodeIndex  = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, counter, nodeIndex);
-		a3spatialPoseSetTranslation(&group->hpose[0].hpose_base[nodeIndex + counter], pos.x, pos.y, pos.z);
-		a3spatialPoseSetRotation(&group->hpose[0].hpose_base[nodeIndex + counter], rot.x, rot.y, rot.z);
-		a3spatialPoseSetScale(&group->hpose[0].hpose_base[nodeIndex + counter], scale, scale, scale);
-		group->hpose[0].hpose_index = nodeIndex;
-		counter++;
+		//nodeIndex  = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, counter, nodeIndex);
+		a3spatialPoseSetTranslation(group->hpose[0].hpose_base + nodeIndex, pos.x, pos.y, pos.z);
+		a3spatialPoseSetRotation(group->hpose[0].hpose_base + nodeIndex, rot.x, rot.y, rot.z);
+		a3spatialPoseSetScale(group->hpose[0].hpose_base + nodeIndex, scale, scale, scale);
+		//group->hpose[0].hpose_index = nodeIndex;
 	}
 
 	//group->hposeCount = counter;
@@ -536,6 +535,7 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 		
 		//int testCounter;
 		fgets(currLine, currLintLength, pFile);
+		a3ui32 nodeIndex = a3hierarchyGetNodeIndex(h, read);
 		while (currLine[0] != '[' && currLine[0] != '#')
 		{
 			
@@ -566,8 +566,12 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 			* 
 			* 
 			*/
+			a3_SpatialPose* pose = group->hpose[1].hpose_base;
 
 
+			a3spatialPoseSetTranslation(pose + nodeIndex, pos.x, pos.y, pos.z);
+			a3spatialPoseSetRotation(pose + nodeIndex, rot.x, rot.y, rot.z);
+			a3spatialPoseSetScale(pose + nodeIndex, rot.x, rot.y, rot.z); 
 
 
 			/*a3hierarchyPoseGroupGetPoseOffsetIndex();

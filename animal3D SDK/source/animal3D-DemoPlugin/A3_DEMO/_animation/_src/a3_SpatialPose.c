@@ -41,18 +41,18 @@ a3i32 a3spatialPoseConvert(a3_SpatialPose* spatialPose, const a3_SpatialPoseChan
 		// ->v' = t + R * S * v is a 4x4 matrix
 
 		//TEMP(for testing)
-		/*a3real4x4SetRotateZYX(spatialPose->transformMat.m, 
+		a3real4x4SetRotateZYX(spatialPose->transformMat.m, 
 			a3trigValid_sind(spatialPose->rotate.x), 
 			a3trigValid_sind(spatialPose->rotate.y), 
-			a3trigValid_sind(spatialPose->rotate.z));*/
+			a3trigValid_sind(spatialPose->rotate.z));
 		
 
 		
 		//scale
-		a3real4Real4x4ProductR(spatialPose->scale.v, spatialPose->transformMat.m, &spatialPose->scale.v0);
-		//rotation
-		a3real4Real4x4ProductR(spatialPose->rotate.v, spatialPose->transformMat.m, &spatialPose->rotate.v0);
-			
+		//a3real4Real4x4ProductR(spatialPose->scale.v, spatialPose->transformMat.m, &spatialPose->scale.v0);
+		////rotation
+		//a3real4Real4x4ProductR(spatialPose->rotate.v, spatialPose->transformMat.m, &spatialPose->rotate.v0);
+		//	
 		//**** DO THIS EVERWHERE IN THIS FILE 
 		// -> make sure rotation angles are within [-360, +360]
 
