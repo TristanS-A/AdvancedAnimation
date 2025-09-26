@@ -141,7 +141,7 @@ a3i32 a3hierarchyPoseGroupSaveBinary(a3_HierarchyPoseGroup const* poseGroup, a3_
 //****TO-DO-ANIM-OPTIONAL: IMPLEMENT ME
 //-----------------------------------------------------------------------------
 				
-
+				//fread
 
 //-----------------------------------------------------------------------------
 //****END-TO-DO-OPTIONAL
@@ -275,11 +275,12 @@ a3i32 a3hierarchyStateUpdateObjectBindToCurrent(const a3_HierarchyState* state, 
 //-----------------------------------------------------------------------------
 //****TO-DO-ANIM-PROJECT-2: IMPLEMENT ME
 //-----------------------------------------------------------------------------
-		//TODO WILL ?????????????????
-
+		
 		for (i = 0; i < state->hierarchy->numNodes; i++)
 		{
-			a3real4x4TransformInverse(state->objectSpaceBindToCurrent->hpose_base[i].transformMat.m, state_bind->objectSpace->hpose_base[i].transformMat.m);
+			a3real4x4Product(state->objectSpaceBindToCurrent->hpose_base[i].transformMat.m, 
+				state_bind->objectSpace->hpose_base[i].transformMat.m, state_bind->objectSpaceInv->hpose_base[i].transformMat.m);
+			
 		}
 
 //-----------------------------------------------------------------------------
@@ -382,7 +383,7 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 			}
 			else if (strstr(currLine, "XYZ"))
 			{
-				group->order = a3poseEulerOrder_xyz;
+				*group->order = a3poseEulerOrder_xyz;
 			}
 		}
 		else if (strstr(currLine, "CalibrationUnits"))
@@ -404,6 +405,7 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 		else if (strstr(currLine, "BoneLengthAxis"))
 		{
 			//set scale factor 
+			*group->channel = a3poseChannel_scale_y;
 		}
 		else if (strstr(currLine, "ScaleFactor"))
 		{
@@ -472,15 +474,10 @@ a3byte ProcessBasePositions(char* currLine, int currLintLength, FILE* pFile, a3_
 			break;
 		}
 		//Sets the spacial pose data
-		//a3ui32 startIndex = group->hpose->hpose_index;
-		//applays base position to the first indexs?
-
-		
 		//nodeIndex  = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, counter, nodeIndex);
 		a3spatialPoseSetTranslation(group->hpose[0].hpose_base + nodeIndex, pos.x, pos.y, pos.z);
 		a3spatialPoseSetRotation(group->hpose[0].hpose_base + nodeIndex, rot.x, rot.y, rot.z);
 		a3spatialPoseSetScale(group->hpose[0].hpose_base + nodeIndex, scale, scale, scale);
-		//group->hpose[0].hpose_index = nodeIndex;
 	}
 
 	//group->hposeCount = counter;
@@ -573,7 +570,6 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 			a3spatialPoseSetRotation(pose + nodeIndex, rot.x, rot.y, rot.z);
 			a3spatialPoseSetScale(pose + nodeIndex, rot.x, rot.y, rot.z); 
 
-
 			/*a3hierarchyPoseGroupGetPoseOffsetIndex();
 			
 			a3spatialPoseSetTranslation();	
@@ -585,7 +581,6 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 			fgets(currLine, currLintLength, pFile);
 			//testCounter++;
 		}
-
 		//the hpose is the currect pose group for a animation and base is a pointer to a animation
 		
 	}
@@ -676,7 +671,7 @@ a3i32 a3hierarchyPoseGroupLoadBVH(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 //****TO-DO-ANIM-OPTIONAL: IMPLEMENT ME
 //-----------------------------------------------------------------------------
 
-
+		
 
 //-----------------------------------------------------------------------------
 //****END-TO-DO-OPTIONAL
@@ -694,7 +689,7 @@ a3i32 a3hierarchyPoseGroupSaveHTR(const a3_HierarchyPoseGroup* poseGroup_in, con
 //****TO-DO-ANIM-OPTIONAL: IMPLEMENT ME
 //-----------------------------------------------------------------------------
 
-
+		
 
 //-----------------------------------------------------------------------------
 //****END-TO-DO-OPTIONAL
