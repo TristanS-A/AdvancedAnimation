@@ -292,7 +292,7 @@ a3i32 a3hierarchyStateUpdateObjectBindToCurrent(const a3_HierarchyState* state, 
 }
 
 //TODO change to cammal case
-a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_HierarchyPoseGroup* group, a3_Hierarchy* h)
+a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_HierarchyPoseGroup* group, a3_Hierarchy* h, float* out_conversion)
 {
 	//Reset currLine determining char
 	currLine[0] = ' ';
@@ -301,6 +301,8 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 	char header[50];
 	char value[50];
 
+	float conversion = 1;
+	float scaleFactor = 1;
 	//Continues processing headers until next type of data is detected
 	while (currLine[0] != '[' && currLine[0] != '#')
 	{
@@ -379,7 +381,7 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 		{
 			if (strstr(currLine, "ZYX"))
 			{
-				//group->order = a3poseEulerOrder_zyx;
+				*group->order = a3poseEulerOrder_zyx;
 			}
 			else if (strstr(currLine, "XYZ"))
 			{
@@ -389,6 +391,17 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 		else if (strstr(currLine, "CalibrationUnits"))
 		{
 			//TODO add more mesurements
+			if (strstr(value, "mm"))
+			{
+				//convert to cm
+				conversion = 1.0f / 10.0f;
+			}
+			else if (strstr(value, "cm"))
+			{
+				//no need
+				conversion = 1.0f;
+			}
+			
 		}
 		else if (strstr(currLine, "RotationUnits"))
 		{
@@ -409,10 +422,12 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 		}
 		else if (strstr(currLine, "ScaleFactor"))
 		{
-			//set scale factor 
+			//set scale factor
+			scaleFactor = (a3real)atof(value);
 		}
 	}
 
+	*out_conversion = scaleFactor * conversion;
 	return true;
 }
 
@@ -446,7 +461,7 @@ a3byte ProcessSegmentsAndHeirarchy(char* currLine, int currLintLength, FILE* pFi
 	return true;
 }
 
-a3byte ProcessBasePositions(char* currLine, int currLintLength, FILE* pFile, a3_HierarchyPoseGroup* group, a3_Hierarchy* h)
+a3byte ProcessBasePositions(char* currLine, int currLintLength, FILE* pFile, a3_HierarchyPoseGroup* group, a3_Hierarchy* h, float scalor)
 {
 	//Reset currLine determining char
 	currLine[0] = ' ';
@@ -466,18 +481,22 @@ a3byte ProcessBasePositions(char* currLine, int currLintLength, FILE* pFile, a3_
 		sscanf(currLine, "%s %f %f %f %f %f %f %f", name, &pos.x, &pos.y, &pos.z, &rot.x, &rot.y, &rot.z, &scale);
 
 		//Gets index of node's spacial pose
-		a3i32 nodeIndex = a3hierarchyGetNodeIndex(h, name);
+		a3i32 j = a3hierarchyGetNodeIndex(h, name);
 
-		if (nodeIndex < 0)
+		if (j < 0)
 		{
 			//somthing bad happend
 			break;
 		}
 		//Sets the spacial pose data
 		//nodeIndex  = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, counter, nodeIndex);
-		a3spatialPoseSetTranslation(group->hpose[0].hpose_base + nodeIndex, pos.x, pos.y, pos.z);
-		a3spatialPoseSetRotation(group->hpose[0].hpose_base + nodeIndex, rot.x, rot.y, rot.z);
-		a3spatialPoseSetScale(group->hpose[0].hpose_base + nodeIndex, scale, scale, scale);
+		a3ui32 p = a3hierarchyPoseGroupGetPoseOffsetIndex(group, j);
+		a3i32 offset = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, 0, j);
+		a3spatialPoseSetTranslation(group->pose + offset, pos.x * 0.005f, pos.y * 0.005f, pos.z * scalor);
+		a3spatialPoseSetRotation(group->pose + offset, rot.x, rot.y, rot.z);
+		a3spatialPoseSetScale(group->pose + offset, scale, scale, scale);
+
+		
 	}
 
 	//group->hposeCount = counter;
@@ -486,11 +505,11 @@ a3byte ProcessBasePositions(char* currLine, int currLintLength, FILE* pFile, a3_
 }
 
 
-a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_HierarchyPoseGroup* group, a3_Hierarchy* h)
+a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_HierarchyPoseGroup* group, a3_Hierarchy* h, float scalor)
 {
 	//currently gets all of the animataions and over writes them
 	fgets(currLine, currLintLength, pFile);
-	
+	int j = 1;
 
 	while (!feof(pFile))
 	{
@@ -499,19 +518,20 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 			fgets(currLine, currLintLength, pFile);
 			fgets(currLine, currLintLength, pFile);
 
-			//if (feof(pFile))
-			//{
-			//	return 1;
-			//}
+			if (feof(pFile))
+			{
+				return 1;
+			}
 			////return false;//apply some offset here
 
-			return 1;
+			return true;
 		}
 
 		//get the animation name
 		int count = 0;
 		//this needs to be move to out side of this loop
-		char read[100];
+		
+		char read[a3node_nameSize];
 		//scrub the name
 		for (int i = 0; i < currLintLength; i++)
 		{
@@ -529,10 +549,9 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 			}
 
 		}
-		
-		//int testCounter;
 		fgets(currLine, currLintLength, pFile);
-		a3ui32 nodeIndex = a3hierarchyGetNodeIndex(h, read);
+
+		j = a3hierarchyGetNodeIndex(h, read);
 		while (currLine[0] != '[' && currLine[0] != '#')
 		{
 			
@@ -544,31 +563,13 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 
 			sscanf(currLine, "%i %f %f %f %f %f %f %f", &index, &pos.x, &pos.y, &pos.z, &rot.x, &rot.y, &rot.z, &scale);
 
-			//get our current offset with repsect to our pose group  (in this case 1)
-
-			/*
-			* for this off set thing I think it works this way
-			* 
-			* 
-			* the  hpose[] is a array of the array of the posese for a animation
-			* hpose[]->hbase_pose[] is a array contaning a pointer to the first index of the array in the pos pool
-			* 
-			* pose[] is the array of ALL posese
-			* 
-			* so how  i think this should work is.
-			* 
-			* hpose[1]->hpose_index. once we get the index then we use it with the offest and populate it 
-			* 
-			* repeate till all animas are filled
-			* 
-			* 
-			*/
-			a3_SpatialPose* pose = group->hpose[1].hpose_base;
-
-
-			a3spatialPoseSetTranslation(pose + nodeIndex, pos.x, pos.y, pos.z);
-			a3spatialPoseSetRotation(pose + nodeIndex, rot.x, rot.y, rot.z);
-			a3spatialPoseSetScale(pose + nodeIndex, rot.x, rot.y, rot.z); 
+			
+			a3_SpatialPose* pose = group->pose;
+			a3i32 offset = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, index, j);
+			//a3hierarchyPoseGroupGetPoseOffsetIndex();
+			a3spatialPoseSetTranslation(pose + offset, pos.x * 0.005f, pos.y * 0.005f, pos.z * scalor);
+			a3spatialPoseSetRotation(pose + offset, rot.x, rot.y, rot.z);
+			a3spatialPoseSetScale(pose + offset, scale, scale, scale);
 
 			/*a3hierarchyPoseGroupGetPoseOffsetIndex();
 			
@@ -606,7 +607,7 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 
 		int lineLength = 4097;
 		char currLine[4097];
-
+		float modelScale = 1;
 		if (pFile)
 		{
 			fgets(currLine, lineLength, pFile);
@@ -614,7 +615,7 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 			{
 				if (strstr(currLine, "[Header]"))
 				{
-					if (!ProcessHeaders(currLine, lineLength, pFile, poseGroup_out, hierarchy_out))
+					if (!ProcessHeaders(currLine, lineLength, pFile, poseGroup_out, hierarchy_out, &modelScale))
 					{
 						//Could not be loaded
 						return -1;
@@ -633,7 +634,7 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 				else if (strstr(currLine, "[BasePosition]"))
 				{
 					//Do base position stuff
-					if (!ProcessBasePositions(currLine, lineLength, pFile, poseGroup_out, hierarchy_out))
+					if (!ProcessBasePositions(currLine, lineLength, pFile, poseGroup_out, hierarchy_out, modelScale))
 					{
 						//Issue with name and segment loading
 						return -1;
@@ -641,7 +642,7 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 				}
 				else if (currLine[0] == '#')
 				{
-					if (!ProcessPoses(currLine, lineLength, pFile, poseGroup_out, hierarchy_out))
+					if (!ProcessPoses(currLine, lineLength, pFile, poseGroup_out, hierarchy_out, modelScale))
 					{
 						return -1;
 					}
