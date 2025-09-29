@@ -278,8 +278,7 @@ a3i32 a3hierarchyStateUpdateObjectBindToCurrent(const a3_HierarchyState* state, 
 		
 		for (i = 0; i < state->hierarchy->numNodes; i++)
 		{
-			a3real4x4Product(state->objectSpaceBindToCurrent->hpose_base[i].transformMat.m, 
-				state_bind->objectSpace->hpose_base[i].transformMat.m, state_bind->objectSpaceInv->hpose_base[i].transformMat.m);
+			a3real4x4Product(state->objectSpaceBindToCurrent->hpose_base[i].transformMat.m, state->objectSpace->hpose_base[i].transformMat.m, state_bind->objectSpaceInv->hpose_base[i].transformMat.m);
 			
 		}
 
@@ -490,11 +489,10 @@ a3byte ProcessBasePositions(char* currLine, int currLintLength, FILE* pFile, a3_
 		}
 		//Sets the spacial pose data
 		//nodeIndex  = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, counter, nodeIndex);
-		a3ui32 p = a3hierarchyPoseGroupGetPoseOffsetIndex(group, j);
-		a3i32 offset = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, 0, j);
-		a3spatialPoseSetTranslation(group->pose + offset, pos.x * 0.005f, pos.y * 0.005f, pos.z * scalor);
-		a3spatialPoseSetRotation(group->pose + offset, rot.x, rot.y, rot.z);
-		a3spatialPoseSetScale(group->pose + offset, scale, scale, scale);
+		//a3i32 offset = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, 0, j);
+		a3spatialPoseSetTranslation(&group->hpose[0].hpose_base[j], pos.x * scalor, pos.y * scalor, pos.z * scalor);
+		a3spatialPoseSetRotation(&group->hpose[0].hpose_base[j], rot.x, rot.y, rot.z);
+		a3spatialPoseSetScale(&group->hpose[0].hpose_base[j], scale, scale, scale);
 
 		
 	}
@@ -510,7 +508,6 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 	//currently gets all of the animataions and over writes them
 	fgets(currLine, currLintLength, pFile);
 	int j = 1;
-
 	while (!feof(pFile))
 	{
 		if (currLine[0] == '#')
@@ -522,9 +519,6 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 			{
 				return 1;
 			}
-			////return false;//apply some offset here
-
-			return true;
 		}
 
 		//get the animation name
@@ -532,6 +526,7 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 		//this needs to be move to out side of this loop
 		
 		char read[a3node_nameSize];
+
 		//scrub the name
 		for (int i = 0; i < currLintLength; i++)
 		{
@@ -545,10 +540,9 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 			{
 				read[count] = currLine[i];
 				count++;
-
 			}
-
 		}
+
 		fgets(currLine, currLintLength, pFile);
 
 		j = a3hierarchyGetNodeIndex(h, read);
@@ -562,14 +556,11 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 			//get the current name 
 
 			sscanf(currLine, "%i %f %f %f %f %f %f %f", &index, &pos.x, &pos.y, &pos.z, &rot.x, &rot.y, &rot.z, &scale);
-
-			
-			a3_SpatialPose* pose = group->pose;
-			a3i32 offset = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, index, j);
-			//a3hierarchyPoseGroupGetPoseOffsetIndex();
-			a3spatialPoseSetTranslation(pose + offset, pos.x * 0.005f, pos.y * 0.005f, pos.z * scalor);
-			a3spatialPoseSetRotation(pose + offset, rot.x, rot.y, rot.z);
-			a3spatialPoseSetScale(pose + offset, scale, scale, scale);
+			//a3i32 offset1 = a3hierarchyPoseGroupGetPoseOffsetIndex(group, index);
+			//a3i32 offset2 = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, offset1, j);
+			a3spatialPoseSetTranslation(&group->hpose[index].hpose_base[j], pos.x * scalor, pos.y * scalor, pos.z * scalor);
+			a3spatialPoseSetRotation(&group->hpose[index].hpose_base[j], rot.x, rot.y, rot.z);
+			a3spatialPoseSetScale(&group->hpose[index].hpose_base[j], scale, scale, scale);
 
 			/*a3hierarchyPoseGroupGetPoseOffsetIndex();
 			
@@ -646,10 +637,7 @@ a3i32 a3hierarchyPoseGroupLoadHTR(a3_HierarchyPoseGroup* poseGroup_out, a3_Hiera
 					{
 						return -1;
 					}
-					//Process animation
-					break;
-				}
-				
+				}			
 			}
 		}
 
