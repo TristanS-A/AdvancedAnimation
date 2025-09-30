@@ -407,7 +407,6 @@ a3byte ProcessHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 			//TODO
 			if (!strstr(currLine, "Degrees")) 
 			{
-
 			}
 		}
 		else if (strstr(currLine, "GlobalAxisofGravity"))
@@ -508,10 +507,13 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 	//currently gets all of the animataions and over writes them
 	fgets(currLine, currLintLength, pFile);
 	int j = 1;
+	a3ui32 index = 0;
+	a3ui32 extraOffset = 0;
 	while (!feof(pFile))
 	{
 		if (currLine[0] == '#')
 		{
+			extraOffset += index;
 			fgets(currLine, currLintLength, pFile);
 			fgets(currLine, currLintLength, pFile);
 
@@ -552,23 +554,15 @@ a3byte ProcessPoses(char* currLine, int currLintLength, FILE* pFile, a3_Hierarch
 			a3vec3 pos;
 			a3vec3 rot;
 			a3f32 scale;
-			a3ui32 index = 0;
-			//get the current name 
 
 			sscanf(currLine, "%i %f %f %f %f %f %f %f", &index, &pos.x, &pos.y, &pos.z, &rot.x, &rot.y, &rot.z, &scale);
-			//a3i32 offset1 = a3hierarchyPoseGroupGetPoseOffsetIndex(group, index);
-			//a3i32 offset2 = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, offset1, j);
-			a3spatialPoseSetTranslation(&group->hpose[index].hpose_base[j], pos.x * scalor, pos.y * scalor, pos.z * scalor);
-			a3spatialPoseSetRotation(&group->hpose[index].hpose_base[j], rot.x, rot.y, rot.z);
-			a3spatialPoseSetScale(&group->hpose[index].hpose_base[j], scale, scale, scale);
-
-			/*a3hierarchyPoseGroupGetPoseOffsetIndex();
 			
-			a3spatialPoseSetTranslation();	
-			a3spatialPoseSetRotation();
-			a3spatialPoseSetScale();*/
+			a3i32 offset = a3hierarchyPoseGroupGetNodePoseOffsetIndex(group, index - 1, j);
+			a3i32 fullOffset = offset + extraOffset * group->hierarchy->numNodes;
+			a3spatialPoseSetTranslation(group->pose + fullOffset, pos.x * scalor, pos.y * scalor, pos.z * scalor);
+			a3spatialPoseSetRotation(group->pose + fullOffset, rot.x, rot.y, rot.z);
+			a3spatialPoseSetScale(group->pose + fullOffset, scale, scale, scale);
 
-			
 			//progress line
 			fgets(currLine, currLintLength, pFile);
 			//testCounter++;
