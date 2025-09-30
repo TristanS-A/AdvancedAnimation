@@ -43,11 +43,52 @@ a3i32 a3spatialPoseConvert(a3_SpatialPose* spatialPose, const a3_SpatialPoseChan
 		//Does scale
 		a3real4x4SetScale(spatialPose->transformMat.m, spatialPose->scale.s);
 
-		//Does rotation
-		a3real4x4SetRotateZYX(spatialPose->transformMat.m,
+
+		switch (order)
+		{
+		case a3poseEulerOrder_xyz:
+			a3real4x4SetRotateXYZ(spatialPose->transformMat.m,
+				a3trigValid_sind(spatialPose->rotate.x),
+				a3trigValid_sind(spatialPose->rotate.y),
+				a3trigValid_sind(spatialPose->rotate.z));
+			break;
+		case a3poseEulerOrder_yzx:
+			a3real4x4SetRotateXYZ(spatialPose->transformMat.m,
+				a3trigValid_sind(spatialPose->rotate.x),
+				a3trigValid_sind(spatialPose->rotate.z),
+				a3trigValid_sind(spatialPose->rotate.y));
+			break;
+		case a3poseEulerOrder_zxy:
+			a3real4x4SetRotateXYZ(spatialPose->transformMat.m,
+				a3trigValid_sind(spatialPose->rotate.y),
+				a3trigValid_sind(spatialPose->rotate.x),
+				a3trigValid_sind(spatialPose->rotate.z));
+			break;
+		case a3poseEulerOrder_yxz:
+			a3real4x4SetRotateXYZ(spatialPose->transformMat.m,
+				a3trigValid_sind(spatialPose->rotate.y),
+				a3trigValid_sind(spatialPose->rotate.x),
+				a3trigValid_sind(spatialPose->rotate.z));
+			break;
+		case a3poseEulerOrder_xzy:
+			a3real4x4SetRotateXYZ(spatialPose->transformMat.m,
+				a3trigValid_sind(spatialPose->rotate.x),
+				a3trigValid_sind(spatialPose->rotate.z),
+				a3trigValid_sind(spatialPose->rotate.y));
+			break;
+		case a3poseEulerOrder_zyx:
+			a3real4x4SetRotateZYX(spatialPose->transformMat.m,
+				a3trigValid_sind(spatialPose->rotate.x),
+				a3trigValid_sind(spatialPose->rotate.y),
+				a3trigValid_sind(spatialPose->rotate.z));
+			break;
+		}
+
+		////Does rotation
+		/*a3real4x4SetRotateZYX(spatialPose->transformMat.m,
 			a3trigValid_sind(spatialPose->rotate.x),
 			a3trigValid_sind(spatialPose->rotate.y),
-			a3trigValid_sind(spatialPose->rotate.z));
+			a3trigValid_sind(spatialPose->rotate.z));*/
 
 		//this part can stay
 		a3real3Add(spatialPose->transformMat.m[3], spatialPose->translate.v);

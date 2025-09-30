@@ -378,13 +378,19 @@ a3byte processHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 		}
 		else if (strstr(currLine, "EulerRotationOrder"))
 		{
+			a3_SpatialPoseEulerOrder order;
 			if (strstr(currLine, "ZYX"))
 			{
-				*group->order = a3poseEulerOrder_zyx;
+				order = a3poseEulerOrder_zyx;
 			}
 			else if (strstr(currLine, "XYZ"))
 			{
-				*group->order = a3poseEulerOrder_xyz;
+				order = a3poseEulerOrder_xyz;
+			}
+
+			for (a3ui32 i = 0; i < h->numNodes; i++)
+			{
+				group->order[i] = order;
 			}
 		}
 		else if (strstr(currLine, "CalibrationUnits"))
@@ -414,7 +420,11 @@ a3byte processHeaders(char* currLine, int currLineLength, FILE* pFile, a3_Hierar
 		else if (strstr(currLine, "BoneLengthAxis"))
 		{
 			//set scale factor 
-			*group->channel = a3poseChannel_scale_y;
+			for (a3ui32 i = 0; i < h->numNodes; i++)
+			{
+				group->channel[i] = a3poseChannel_scale_y;
+			}
+			
 		}
 		else if (strstr(currLine, "ScaleFactor"))
 		{
