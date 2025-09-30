@@ -40,16 +40,14 @@ a3i32 a3spatialPoseConvert(a3_SpatialPose* spatialPose, const a3_SpatialPoseChan
 		// -> conact (matrix mul) them in the correct order
 		// ->v' = t + R * S * v is a 4x4 matrix
 
-		
-		//a3real4x4SetScale(spatialPose->transformMat.m, spatialPose->scale.s);
-		//TEMP(for testing)
+		//Does scale
+		a3real4x4SetScale(spatialPose->transformMat.m, spatialPose->scale.s);
+
+		//Does rotation
 		a3real4x4SetRotateZYX(spatialPose->transformMat.m,
 			a3trigValid_sind(spatialPose->rotate.x),
 			a3trigValid_sind(spatialPose->rotate.y),
 			a3trigValid_sind(spatialPose->rotate.z));
-
-		//**** DO THIS EVERWHERE IN THIS FILE 
-		// -> make sure rotation angles are within [-360, +360]
 
 		//this part can stay
 		a3real3Add(spatialPose->transformMat.m[3], spatialPose->translate.v);

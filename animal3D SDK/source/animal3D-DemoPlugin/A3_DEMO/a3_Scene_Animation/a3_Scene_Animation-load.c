@@ -517,12 +517,12 @@ void a3animation_init_animation(a3_DemoState const* demoState, a3_Scene_Animatio
 			a3clipCalculateDuration(scene->clipPool, j, fps_hierarchy);
 		}
 
-		j = a3clipGetIndexInPool(scene->clipPool, "xbot_idle_f");
-		a3clipControllerInit(scene->clipCtrl_idle_f, "xbot_ctrl_idle_f", scene->clipPool, j, rate_hierarchy, fps_hierarchy);
-		j = a3clipGetIndexInPool(scene->clipPool, "xbot_idle_m");
-		a3clipControllerInit(scene->clipCtrl_idle_m, "xbot_ctrl_idle_m", scene->clipPool, j, rate_hierarchy, fps_hierarchy);
-		j = a3clipGetIndexInPool(scene->clipPool, "xbot_idle_pistol");
-		a3clipControllerInit(scene->clipCtrl_idle_p, "xbot_ctrl_idle_p", scene->clipPool, j, rate_hierarchy, fps_hierarchy);
+		j = a3clipGetIndexInPool(scene->clipPool, "xbot_backflip");
+		a3clipControllerInit(scene->clipCtrl_idle_f, "xbot_backflip", scene->clipPool, j, rate_hierarchy, fps_hierarchy);
+		j = a3clipGetIndexInPool(scene->clipPool, "xbot_backflip");
+		a3clipControllerInit(scene->clipCtrl_idle_m, "xbot_backflip", scene->clipPool, j, rate_hierarchy, fps_hierarchy);
+		j = a3clipGetIndexInPool(scene->clipPool, "xbot_backflip");
+		a3clipControllerInit(scene->clipCtrl_idle_p, "xbot_backflip", scene->clipPool, j, rate_hierarchy, fps_hierarchy);
 	}
 
 	// initialize additional clips and controllers
