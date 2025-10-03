@@ -23,7 +23,6 @@
 */
 
 #include "../a3_SpatialPose.h"
-#include <math.h>
 
 
 //-----------------------------------------------------------------------------
@@ -103,6 +102,8 @@ a3i32 a3spatialPoseConvert(a3_SpatialPose* spatialPose, const a3_SpatialPoseChan
 }
 
 // restore single node pose from matrix
+extern float asinf(float y_r);
+extern float atan2f(float y, float x);
 a3i32 a3spatialPoseRestore(a3_SpatialPose* spatialPose, const a3_SpatialPoseChannel channel, const a3_SpatialPoseEulerOrder order)
 {
 	if (spatialPose)
