@@ -264,7 +264,27 @@ static void a3kinematicsResolvePostIK(a3_HierarchyState* activeHS,
 //-----------------------------------------------------------------------------
 //****TO-DO-ANIM-PROJECT-3: IMPLEMENT ME
 //-----------------------------------------------------------------------------
+	
+	//1
+	activeHS->objectSpace->hpose_base[nodeIndex].transformMat = baseHS->objectSpace->hpose_base[nodeIndex].transformMat;
 
+	//2
+	a3real4x4GetInverse(activeHS->objectSpaceInv->hpose_base[nodeIndex].transformMat.m, j2obj);
+	
+	//3
+	a3real4x4ProductTransform(activeHS->localSpace, 
+		activeHS->objectSpaceInv->hpose_base[nodeIndex].transformMat.m, 
+		baseHS->localSpace->hpose_base[nodeIndex].transformMat.m);
+
+	//4
+	//do both so that we can do the deconcat
+	a3spatialPoseConvert(activeHS->hpose->hpose_base + nodeIndex, poseGroup->channel, poseGroup->order);
+	a3spatialPoseConvert(baseHS->hpose->hpose_base + nodeIndex, poseGroup->channel, poseGroup->order);
+
+	//5
+	a3spatialPoseDeconcat(activeHS->hpose->hpose_base + nodeIndex, 
+		activeHS->hpose->hpose_base + nodeIndex, 
+		baseHS->hpose->hpose_base + nodeIndex);
 
 
 //-----------------------------------------------------------------------------
