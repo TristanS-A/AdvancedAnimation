@@ -272,14 +272,15 @@ static void a3kinematicsResolvePostIK(a3_HierarchyState* activeHS,
 	a3real4x4GetInverse(activeHS->objectSpaceInv->hpose_base[nodeIndex].transformMat.m, j2obj);
 	
 	//3
-	a3real4x4ProductTransform(activeHS->localSpace, 
+	a3real4x4Product(
+		activeHS->localSpace->hpose_base[nodeIndex].transformMat.m,
 		activeHS->objectSpaceInv->hpose_base[nodeIndex].transformMat.m, 
 		baseHS->localSpace->hpose_base[nodeIndex].transformMat.m);
 
-	//4
+	//47
 	//do both so that we can do the deconcat
-	a3spatialPoseConvert(activeHS->hpose->hpose_base + nodeIndex, poseGroup->channel, poseGroup->order);
-	a3spatialPoseConvert(baseHS->hpose->hpose_base + nodeIndex, poseGroup->channel, poseGroup->order);
+	a3spatialPoseConvert(activeHS->hpose->hpose_base + nodeIndex, poseGroup->channel[0], poseGroup->order[0]);
+	a3spatialPoseConvert(baseHS->hpose->hpose_base + nodeIndex, poseGroup->channel[0], poseGroup->order[0]);
 
 	//5
 	a3spatialPoseDeconcat(activeHS->hpose->hpose_base + nodeIndex, 
