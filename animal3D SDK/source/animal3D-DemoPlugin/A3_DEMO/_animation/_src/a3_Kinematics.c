@@ -267,6 +267,7 @@ static void a3kinematicsResolvePostIK(a3_HierarchyState* activeHS,
 	
 	//1
 	activeHS->objectSpace->hpose_base[nodeIndex].transformMat = baseHS->objectSpace->hpose_base[nodeIndex].transformMat;
+	//a3real4x4SetReal4x4()
 
 	//2
 	a3real4x4GetInverse(activeHS->objectSpaceInv->hpose_base[nodeIndex].transformMat.m, j2obj);
@@ -277,7 +278,7 @@ static void a3kinematicsResolvePostIK(a3_HierarchyState* activeHS,
 		activeHS->objectSpaceInv->hpose_base[nodeIndex].transformMat.m, 
 		baseHS->localSpace->hpose_base[nodeIndex].transformMat.m);
 
-	//47
+	//4
 	//do both so that we can do the deconcat
 	a3spatialPoseConvert(activeHS->hpose->hpose_base + nodeIndex, poseGroup->channel[0], poseGroup->order[0]);
 	a3spatialPoseConvert(baseHS->hpose->hpose_base + nodeIndex, poseGroup->channel[0], poseGroup->order[0]);
@@ -312,9 +313,22 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 //-----------------------------------------------------------------------------
 //****TO-DO-ANIM-PROJECT-3: IMPLEMENT ME
 //-----------------------------------------------------------------------------
+	//first step
+	//move everything into the space of the skeleton/heiarcy
+	//look at target
 
+	//main step
+	//solver: build and orthonornal basis
+	//->joint to object
+	//1. direction basis = traget - joint position
+	//2. side basis = Cross(up and directoin)
+	//3. up basis = Cross(direction and side)
+	//4 normailize all
 
-
+	//last step
+	//resolve every affected joint
+	//a3kinematicsResolvePostIK()
+	
 //-----------------------------------------------------------------------------
 //****END-TO-DO-PROJECT-3
 //-----------------------------------------------------------------------------
@@ -346,7 +360,30 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 //-----------------------------------------------------------------------------
 
 
+	//first step
+	//move everything into the space of the skeleton/heiarcy
+	//wrist effector
+	//pole vector 
 
+	//main step
+	//solve joint-to-object for end, hinge, and base
+	//check if we are in range?
+	//->end  position*
+	//->hinge position*
+	//1. base joint to end effector vector distance
+	//2. base joint to pole vector constraint
+	//3. plane normal = cross(1,2)
+	//4. geometric or algibraic)
+	// -> solve elbow position
+	//5.use the look at function formula and fix sholder and elbow rotations
+
+	//last step
+	//resolve every affected joint
+	// ->do it in start closer to the root and go down
+	//a3kinematicsResolvePostIK()
+	//a3kinematicsResolvePostIK()
+	//a3kinematicsResolvePostIK()
+	
 //-----------------------------------------------------------------------------
 //****END-TO-DO-PROJECT-3
 //-----------------------------------------------------------------------------
