@@ -328,9 +328,9 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 		sceneGraphState->objectSpace->hpose_base[sceneGraphIndex_effector].transformMat.m);
 
 	//store the direction in a very not awsome way
-	a3real3Diff(&activeHS->hpose[hierarchyObjIndex_affected].hpose_base->translate.v0, 
-		&sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector].transformMat.m30
-		,&baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.m30);
+	a3real4Diff(activeHS->hpose[hierarchyObjIndex_affected].hpose_base->translate.v, 
+		sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector].transformMat.mm
+		,baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.mm);
 	
 
 	//2. side basis = Cross(up and directoin)
