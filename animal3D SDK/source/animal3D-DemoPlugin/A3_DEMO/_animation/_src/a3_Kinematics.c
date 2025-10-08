@@ -266,8 +266,8 @@ static void a3kinematicsResolvePostIK(a3_HierarchyState* activeHS,
 //-----------------------------------------------------------------------------
 	
 	//1
-	activeHS->objectSpace->hpose_base[nodeIndex].transformMat = baseHS->objectSpace->hpose_base[nodeIndex].transformMat;
-	//a3real4x4SetReal4x4()
+	//activeHS->objectSpace->hpose_base[nodeIndex].transformMat = baseHS->objectSpace->hpose_base[nodeIndex].transformMat;
+	a3real4x4SetReal4x4(activeHS->objectSpace->hpose_base[nodeIndex].transformMat.m, j2obj);
 
 	//2
 	a3real4x4GetInverse(activeHS->objectSpaceInv->hpose_base[nodeIndex].transformMat.m, j2obj);
@@ -321,13 +321,34 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 	//solver: build and orthonornal basis
 	//->joint to object
 	//1. direction basis = traget - joint position
+	a3mat4 localSpaceEffector;
+	a3real4x4Product(&localSpaceEffector.mm,
+		baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.m, 
+		sceneGraphState[sceneGraphIndex_effector].objectSpace->hpose_base->transformMat.m);
+
+	a3vec3 direction;
+	a3real3Diff(&direction.r, &localSpaceEffector.v->r, &baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.v->r);
+	a3real3Set(&m_affected.m00, direction.x, direction.y, direction.z);
+	
 	//2. side basis = Cross(up and directoin)
+	a3real3Cross(&m_affected.m10, &a3vec3_y.r, &direction.r);
+
+
 	//3. up basis = Cross(direction and side)
+	a3real3Cross(&m_affected.m20, &direction.r, &m_affected.m20);
+
+
+
 	//4 normailize all
+	a3real3Normalize(&m_affected.m00);
+	a3real3Normalize(&m_affected.m10);
+	a3real3Normalize(&m_affected.m20);
+
+
 
 	//last step
 	//resolve every affected joint
-	//a3kinematicsResolvePostIK()
+	//a3kinematicsResolvePostIK(activeHS, baseHS, poseGroup, hierarchyObjIndex_affected, &m_affected.mm);
 	
 //-----------------------------------------------------------------------------
 //****END-TO-DO-PROJECT-3
