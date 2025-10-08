@@ -321,25 +321,29 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 	//solver: build and orthonornal basis
 	//->joint to object
 	//1. direction basis = traget - joint position
-	a3mat4 localSpaceEffector;
-	a3real4x4Product(&localSpaceEffector.mm,
-		baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.m, 
-		sceneGraphState[sceneGraphIndex_effector].objectSpace->hpose_base->transformMat.m);
 
-	a3vec3 direction;
-	a3real3Diff(&direction.r, &localSpaceEffector.v->r, &baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.v->r);
-	a3real3Set(&m_affected.m00, direction.x, direction.y, direction.z);
+	//move it to the space of our object
+	a3real4x4Product(sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector].transformMat.m,
+		baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.m, 
+		sceneGraphState->objectSpace->hpose_base[sceneGraphIndex_effector].transformMat.m);
+
+	//store the direction in a very not awsome way
+	a3real3Diff(&activeHS->hpose[hierarchyObjIndex_affected].hpose_base->translate.v0, 
+		&sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector].transformMat.m30
+		,&baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.m30);
 	
+
 	//2. side basis = Cross(up and directoin)
-	a3real3Cross(&m_affected.m10, &a3vec3_y.r, &direction.r);
+	a3real3Cross(&m_affected.m10, &a3vec3_y.r, activeHS->hpose[hierarchyObjIndex_affected].hpose_base->translate.v);
 
 
 	//3. up basis = Cross(direction and side)
-	a3real3Cross(&m_affected.m20, &direction.r, &m_affected.m20);
+	a3real3Cross(&m_affected.m20, 
+		&activeHS->hpose[hierarchyObjIndex_affected].hpose_base->translate.x, 
+		&m_affected.m20);
 
 
-
-	//4 normailize all
+	//4 normailize all --> where do we put this?
 	a3real3Normalize(&m_affected.m00);
 	a3real3Normalize(&m_affected.m10);
 	a3real3Normalize(&m_affected.m20);
