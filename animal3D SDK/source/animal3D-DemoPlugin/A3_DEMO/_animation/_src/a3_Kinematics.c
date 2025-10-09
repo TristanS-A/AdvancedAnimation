@@ -356,14 +356,16 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 
 	//Make look at mat
 	a3real4x4 lookAtMat;
-	a3real4x4Set(lookAtMat, m_affected.v0.x, m_affected.v0.y, m_affected.v0.z, 0, 
-							m_affected.v1.x, m_affected.v1.y, m_affected.v1.z, 0, 
-							m_affected.v2.x, m_affected.v2.y, m_affected.v2.z, 0, 
+	a3real4x4Set(lookAtMat, m_affected.v0.x, m_affected.v0.y, m_affected.v0.z, baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.v3.x,
+							m_affected.v1.x, m_affected.v1.y, m_affected.v1.z, baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.v3.y,
+							m_affected.v2.x, m_affected.v2.y, m_affected.v2.z, baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.v3.z,
 							0, 0, 0, 1);
 
 	//a3i32 t = sceneGraphIndex_hierarchyObj + hierarchyObjIndex_affected;
 	//TestRotation to see make sure we are modifying the right thing
 	 //a3real4x4Product(poseGroup[0].pose->transformMat.m, lookAtMat, poseGroup[0].pose->transformMat.m);
+	//a3real4x4Product(sceneGraphState->hpose->hpose_base[sceneGraphIndex_hierarchyObj].transformMat.m,
+	//lookAtMat, sceneGraphState->hpose->hpose_base[sceneGraphIndex_hierarchyObj].transformMat.m);
 
 	//last step
 	//resolve every affected joint
