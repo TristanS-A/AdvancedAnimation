@@ -322,37 +322,52 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 	//->joint to object
 	//1. direction basis = traget - joint position
 
+	a3real4x4 transformedMat;
+
 	//move it to the space of our object
-	a3real4x4Product(sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector].transformMat.m,
+	a3real4x4Product(transformedMat,
 		baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.m, 
 		sceneGraphState->objectSpace->hpose_base[sceneGraphIndex_effector].transformMat.m);
 
-	//store the direction in a very not awsome way
-	a3real4Diff(activeHS->hpose[hierarchyObjIndex_affected].hpose_base->translate.v, 
-		sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector].transformMat.mm
-		,baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.mm);
+	a3vec4 displacement;
+	a3real4Diff(&displacement.r, 
+		&sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector].transformMat.v3.r
+		,&baseHS->hpose->hpose_base[hierarchyObjIndex_affected].transformMat.v3.r);
 	
+	//Normalize displacment vector to get direction
+	a3real3Normalize(&displacement.r);
+
+	//Assigns forward axes to 1st axis
+	m_affected.v0 = displacement.rgb;
 
 	//2. side basis = Cross(up and directoin)
-	a3real3Cross(&m_affected.m10, &a3vec3_y.r, activeHS->hpose[hierarchyObjIndex_affected].hpose_base->translate.v);
-
+	a3real3Cross(&m_affected.v1.r, &a3vec3_y.r, &displacement.r);
 
 	//3. up basis = Cross(direction and side)
-	a3real3Cross(&m_affected.m20, 
-		&activeHS->hpose[hierarchyObjIndex_affected].hpose_base->translate.x, 
-		&m_affected.m20);
+	a3real3Cross(&m_affected.v2.r, 
+		&m_affected.v0.r,
+		&m_affected.v1.r);
 
 
 	//4 normailize all --> where do we put this?
-	a3real3Normalize(&m_affected.m00);
-	a3real3Normalize(&m_affected.m10);
-	a3real3Normalize(&m_affected.m20);
+	//a3real3Normalize(&m_affected.m00);
+	a3real3Normalize(&m_affected.v1.r);
+	a3real3Normalize(&m_affected.v2.r);
 
+	//Make look at mat
+	a3real4x4 lookAtMat;
+	a3real4x4Set(lookAtMat, m_affected.v0.x, m_affected.v0.y, m_affected.v0.z, 0, 
+							m_affected.v1.x, m_affected.v1.y, m_affected.v1.z, 0, 
+							m_affected.v2.x, m_affected.v2.y, m_affected.v2.z, 0, 
+							0, 0, 0, 1);
 
+	//a3i32 t = sceneGraphIndex_hierarchyObj + hierarchyObjIndex_affected;
+	//TestRotation to see make sure we are modifying the right thing
+	 //a3real4x4Product(poseGroup[0].pose->transformMat.m, lookAtMat, poseGroup[0].pose->transformMat.m);
 
 	//last step
 	//resolve every affected joint
-	//a3kinematicsResolvePostIK(activeHS, baseHS, poseGroup, hierarchyObjIndex_affected, &m_affected.mm);
+	a3kinematicsResolvePostIK(activeHS, baseHS, poseGroup, hierarchyObjIndex_affected, lookAtMat);
 	
 //-----------------------------------------------------------------------------
 //****END-TO-DO-PROJECT-3
