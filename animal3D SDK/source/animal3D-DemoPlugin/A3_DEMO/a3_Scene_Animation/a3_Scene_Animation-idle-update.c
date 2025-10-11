@@ -254,7 +254,7 @@ void a3animation_update_animation_skeletal(
 		a3animation_update_applyEffectors(scene, activeHS_ik, baseHS, poseGroup);
 
 		//// run full IK pipeline (if not resolving with effectors)
-		//a3kinematicsUpdateHierarchyStateIK(activeHS_ik, baseHS, poseGroup);
+		a3kinematicsUpdateHierarchyStateIK(activeHS_ik, baseHS, poseGroup);
 	}
 
 	// blend FK/IK to final

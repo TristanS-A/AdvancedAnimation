@@ -105,8 +105,8 @@ static inline void a3kinematicsSolveInverseSingle(const a3_HierarchyState* hiera
 
 	a3real4x4Product(
 		hierarchyState->localSpace->hpose_base[index].transformMat.m,		// Result: this node local-space.
-		hierarchyState->objectSpaceInv->hpose_base[parentIndex].transformMat.m,// Left-hand: parent node object-space.
-		hierarchyState->objectSpaceInv->hpose_base[index].transformMat.m		// Right-hand: this node object space.
+		hierarchyState->objectSpaceInv->hpose_base[parentIndex].transformMat.m,// Left-hand: parent node object-space inverse.
+		hierarchyState->objectSpace->hpose_base[index].transformMat.m		// Right-hand: this node object space.
 	);
 
 //-----------------------------------------------------------------------------
@@ -268,9 +268,12 @@ static void a3kinematicsResolvePostIK(a3_HierarchyState* activeHS,
 	//1
 	//activeHS->objectSpace->hpose_base[nodeIndex].transformMat = baseHS->objectSpace->hpose_base[nodeIndex].transformMat;
 	a3real4x4SetReal4x4(activeHS->objectSpace->hpose_base[nodeIndex].transformMat.m, j2obj);
+	//a3real4x4Product(activeHS->objectSpace->hpose_base[nodeIndex].transformMat.m, activeHS->objectSpace->hpose_base[nodeIndex].transformMat.m, j2obj);
+	
 
 	//2
 	a3real4x4GetInverse(activeHS->objectSpaceInv->hpose_base[nodeIndex].transformMat.m, j2obj);
+	//a3real4x4GetInverse(activeHS->objectSpaceInv->hpose_base[nodeIndex].transformMat.m, activeHS->objectSpace->hpose_base[nodeIndex].transformMat.m);
 	
 	//3
 	a3real4x4Product(
@@ -322,35 +325,52 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 	a3real4x4* hToRig = &sceneGraphState->localSpace->hpose_base[sceneGraphIndex_hierarchyObj].transformMat.m;
 	a3real4x4* rigToH = &sceneGraphState->localSpaceInv->hpose_base[sceneGraphIndex_hierarchyObj].transformMat.m;
 
-
 	a3vec4 effectorInH;
 
-	a3real4ProductTransform(effectorInH.v, &sceneGraphState->objectSpace->hpose_base[sceneGraphIndex_effector].transformMat.v3.x, *rigToH);
+	a3real4ProductTransform(effectorInH.v, &sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector].transformMat.v3.x, *rigToH);
 	//move it to the space of our object
 
 	//a3vec4 displacement;
-	a3real4x4 basis;
-	a3real4Diff(basis[0], &sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector].transformMat.v3.x, effectorInH.v);
-	
-	//Normalize displacment vector to get direction
-	a3real3Normalize(basis[0]);
+	a3mat3 basis;
 
-	a3real3Cross(basis[2], &a3vec3_y.r, basis[0]);
+	//Gets a vector from effector to joint
+	a3real4Diff(&basis.v0.x, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.x, effectorInH.v);
+	
+	//a3real3Set(&basis.v0.x, 0, 0, 1);
+
+	//Normalize displacment vector to get direction
+	a3real3Normalize(&basis.v0.x);
+
+	//Gets right basis
+	a3real3Cross(&basis.v2.x, &a3vec3_y.r, &basis.v0.x);
+
+	a3real3Normalize(&basis.v2.x);
 
 	//3. up basis = Cross(direction and side)
-	a3real3Cross(basis[1],
-		basis[3],
-		basis[0]);
+	a3real3Cross(&basis.v1.x,
+		&basis.v0.x,
+		&basis.v2.x);
 
-	//4 normailize all --> where do we put this?
-	//a3real3Normalize(&m_affected.m00);
-	a3real3Normalize(basis[1]);
-	a3real3Normalize(basis[2]);
+	//4 normailize
+	a3real3Normalize(&basis.v1.x);
 
-	//Make look at mat
-	//a3real4x4 lookAtMat;
+	a3mat4 finalJToObject;
+
+	//Change the basis to the affected basis I think
+	a3real3x3Product(basis.m, m_affected.m, basis.m);
+
+	//Add the computed axes to the final joint to object mat (This is done wierdly where 
+	// the z axis is stored in column 2, the y axis in column 3, and the x axis in column 0
+	a3real4Set(&finalJToObject.v1.x, basis.v0.x, basis.v0.y, basis.v0.z, 0);
+	a3real4Set(&finalJToObject.v2.x, basis.v1.x, basis.v1.y, basis.v1.z, 0);
+	a3real4Set(&finalJToObject.v0.x, basis.v2.x, basis.v2.y, basis.v2.z, 0);
+
+	//Set translation
+	a3real4Set(&finalJToObject.v3.x, activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.x,
+		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.y,
+		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.z, 1);
 	
-	a3kinematicsResolvePostIK(activeHS, baseHS, poseGroup, hierarchyObjIndex_affected, basis);
+	a3kinematicsResolvePostIK(activeHS, baseHS, poseGroup, hierarchyObjIndex_affected, finalJToObject.m);
 	
 //-----------------------------------------------------------------------------
 //****END-TO-DO-PROJECT-3
