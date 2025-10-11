@@ -266,14 +266,10 @@ static void a3kinematicsResolvePostIK(a3_HierarchyState* activeHS,
 //-----------------------------------------------------------------------------
 	
 	//1
-	//activeHS->objectSpace->hpose_base[nodeIndex].transformMat = baseHS->objectSpace->hpose_base[nodeIndex].transformMat;
-	a3real4x4SetReal4x4(activeHS->objectSpace->hpose_base[nodeIndex].transformMat.m, j2obj);
-	//a3real4x4Product(activeHS->objectSpace->hpose_base[nodeIndex].transformMat.m, activeHS->objectSpace->hpose_base[nodeIndex].transformMat.m, j2obj);
-	
+	a3real4x4SetReal4x4(activeHS->objectSpace->hpose_base[nodeIndex].transformMat.m, j2obj);	
 
-	//2
-	a3real4x4GetInverse(activeHS->objectSpaceInv->hpose_base[nodeIndex].transformMat.m, j2obj);
-	//a3real4x4GetInverse(activeHS->objectSpaceInv->hpose_base[nodeIndex].transformMat.m, activeHS->objectSpace->hpose_base[nodeIndex].transformMat.m);
+	//2 Doing the inverse of the active HS breaks it for some reason
+	a3real4x4GetInverse(baseHS->objectSpace->hpose_base[nodeIndex].transformMat.m, j2obj);
 	
 	//3
 	a3real4x4Product(
@@ -332,27 +328,29 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 
 	//a3vec4 displacement;
 	a3mat3 basis;
+	a3vec4 temp;
 
 	//Gets a vector from effector to joint
-	a3real4Diff(&basis.v0.x, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.x, effectorInH.v);
+	a3real4Diff(&temp.x, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.x, effectorInH.v);
 	
-	//a3real3Set(&basis.v0.x, 0, 0, 1);
+	//a3real3Set(&basis.v2.x, 0, 0, 1);
 
 	//Normalize displacment vector to get direction
-	a3real3Normalize(&basis.v0.x);
+	//a3real3Normalize(&temp.x);
+	a3real3Set(&basis.v2.x, temp.x, temp.y, temp.z);
 
 	//Gets right basis
-	a3real3Cross(&basis.v2.x, &a3vec3_y.r, &basis.v0.x);
-
-	a3real3Normalize(&basis.v2.x);
+	a3real3Cross(&basis.v0.x, &a3vec3_y.r, &basis.v2.x);
 
 	//3. up basis = Cross(direction and side)
 	a3real3Cross(&basis.v1.x,
-		&basis.v0.x,
-		&basis.v2.x);
+		&basis.v2.x,
+		&basis.v0.x);
 
-	//4 normailize
+	//4. normailize
+	a3real3Normalize(&basis.v0.x);
 	a3real3Normalize(&basis.v1.x);
+	a3real3Normalize(&basis.v2.x);
 
 	a3mat4 finalJToObject;
 
@@ -361,9 +359,9 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 
 	//Add the computed axes to the final joint to object mat (This is done wierdly where 
 	// the z axis is stored in column 2, the y axis in column 3, and the x axis in column 0
-	a3real4Set(&finalJToObject.v1.x, basis.v0.x, basis.v0.y, basis.v0.z, 0);
+	a3real4Set(&finalJToObject.v0.x, basis.v0.x, basis.v0.y, basis.v0.z, 0);
 	a3real4Set(&finalJToObject.v2.x, basis.v1.x, basis.v1.y, basis.v1.z, 0);
-	a3real4Set(&finalJToObject.v0.x, basis.v2.x, basis.v2.y, basis.v2.z, 0);
+	a3real4Set(&finalJToObject.v1.x, basis.v2.x, basis.v2.y, basis.v2.z, 0);
 
 	//Set translation
 	a3real4Set(&finalJToObject.v3.x, activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.x,
