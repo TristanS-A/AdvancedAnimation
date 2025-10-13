@@ -323,7 +323,7 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 	a3vec4 effectorInH;
 
 	//set to joint local space
-	a3real4ProductTransform(effectorInH.v, &sceneGraphState->objectSpace->hpose_base[sceneGraphIndex_effector].transformMat.v3.x, *rigToH);
+	a3real4ProductTransform(effectorInH.v, &sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector].transformMat.v3.x, *rigToH);
 	//move it to the space of our object
 
 	//a3vec4 displacement;
@@ -333,19 +333,17 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 	//Gets a vector from effector to joint --> joint local space
 	a3real4Diff(&temp.x, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.x, effectorInH.v);
 	
-	//a3real3Set(&basis.v2.x, 0, 0, 1);
-
 	//Normalize displacment vector to get direction --> join local space
 	//a3real3Normalize(&temp.x);
 	a3real3Set(&basis.v2.x, temp.x, temp.y, temp.z);
 
 	//Gets right basis --> join localSpace by our local y axis
-	a3real3Cross(&basis.v0.x, &m_affected.v2.x, &basis.v2.x);
+	a3real3Cross(&basis.v0.x, &a3vec3_y.x, &basis.v2.x);
 
 	//3. up basis = Cross(direction and side)
 	a3real3Cross(&basis.v1.x,
-		&basis.v2.x,
-		&basis.v0.x);
+		&basis.v0.x,
+		&basis.v2.x);
 
 	//4. normailize
 	a3real3Normalize(&basis.v0.x);
@@ -355,13 +353,13 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 	a3mat4 finalJToObject;
 
 	//Change the basis to the affected basis I think
-	//a3real3x3Product(basis.m, m_affected.m, basis.m);
+	a3real3x3Product(basis.m, m_affected.m, basis.m);
 
 	//Add the computed axes to the final joint to object mat (This is done wierdly where 
 	// the z axis is stored in column 2, the y axis in column 3, and the x axis in column 0
 	a3real4Set(&finalJToObject.v0.x, basis.v0.x, basis.v0.y, basis.v0.z, 0);
-	a3real4Set(&finalJToObject.v2.x, basis.v1.x, basis.v1.y, basis.v1.z, 0);
-	a3real4Set(&finalJToObject.v1.x, basis.v2.x, basis.v2.y, basis.v2.z, 0);
+	a3real4Set(&finalJToObject.v1.x, basis.v1.x, basis.v1.y, basis.v1.z, 0);
+	a3real4Set(&finalJToObject.v2.x, basis.v2.x, basis.v2.y, basis.v2.z, 0);
 
 	//Set translation -->in joint local space
 	a3real4Set(&finalJToObject.v3.x, activeHS->localSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.x,
@@ -404,8 +402,6 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 //****TO-DO-ANIM-PROJECT-3: IMPLEMENT ME
 //-----------------------------------------------------------------------------
 
-	return;
-
 	//first step
 	//move everything into the space of the skeleton/heiarcy
 	//wrist effector
@@ -427,11 +423,11 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 
 	//1. base joint to end effector vector distance
 	a3vec3 baseToEnd;
-	a3real4Diff(baseToEnd.v, endEffectorPositionInH.v, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.x);
+	a3real3Diff(baseToEnd.v, endEffectorPositionInH.v, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.x);
 
 	//2. base joint to pole vector constraint
 	a3vec3 baseToConstraint;
-	a3real4Diff(baseToConstraint.v, constraintPositionInH.v, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.x);
+	a3real3Diff(baseToConstraint.v, constraintPositionInH.v, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.x);
 
 	//3. plane normal = cross(1,2)
 	a3vec3 limbPlaneNormal;
@@ -445,7 +441,7 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 
 	//Made additional side of triangle (NEED TO FIND OOUT EXACTLY WHAT SIDES WE ACTUALLY NEED)
 	a3vec3 constraintToEndEffector;
-	a3real4Diff(baseToConstraint.v, endEffectorPositionInH.v, constraintPositionInH.v);
+	a3real3Diff(baseToConstraint.v, endEffectorPositionInH.v, constraintPositionInH.v);
 
 	//Set up target distence elbow should be (NEED TO CONFIRM THAT WE ACTUALLY NEED A TARGET DISTANCE)
 	a3real targetDist;
