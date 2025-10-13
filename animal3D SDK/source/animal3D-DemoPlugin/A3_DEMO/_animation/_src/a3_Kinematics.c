@@ -375,6 +375,7 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 //-----------------------------------------------------------------------------
 }
 
+extern float acos(float y_r);
 void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 	a3_HierarchyState* activeHS, a3_HierarchyState const* baseHS, a3_HierarchyPoseGroup const* poseGroup,
 	a3ui32 const sceneGraphIndex_hierarchyObj, a3ui32 const sceneGraphIndex_effector_end, a3ui32 const sceneGraphIndex_constraint,
@@ -406,16 +407,70 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 	//wrist effector
 	//pole vector 
 
+	a3mat4 rigToH = sceneGraphState->localSpaceInv->hpose_base[sceneGraphIndex_hierarchyObj].transformMat;
+
+	a3vec4 endEffectorPositionInH;
+	a3vec4 constraintPositionInH;
+
+	a3real4ProductTransform(endEffectorPositionInH.v, &sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector_end].transformMat.v3.x, rigToH.m);
+	a3real4ProductTransform(constraintPositionInH.v, &sceneGraphState->localSpace->hpose_base[sceneGraphIndex_constraint].transformMat.v3.x, rigToH.m);
+
 	//main step
 	//solve joint-to-object for end, hinge, and base
 	//check if we are in range?
 	//->end  position*
 	//->hinge position*
+
 	//1. base joint to end effector vector distance
+	a3vec3 baseToEnd;
+	a3real4Diff(baseToEnd.v, endEffectorPositionInH.v, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.x);
+
 	//2. base joint to pole vector constraint
+	a3vec3 baseToConstraint;
+	a3real4Diff(baseToConstraint.v, constraintPositionInH.v, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.x);
+
 	//3. plane normal = cross(1,2)
-	//4. geometric or algibraic)
+	a3vec3 limbPlaneNormal;
+	a3real3Cross(&limbPlaneNormal.x, baseToConstraint.v, baseToEnd.v);
+	//a3real3Cross(&limbPlaneNormal.x, jToEnd.v, jToConstraint.v);
+
+	a3real3Normalize(limbPlaneNormal.v);
+
+	//4. LAW OF COSINES
 	// -> solve elbow position
+
+	//Made additional side of triangle (NEED TO FIND OOUT EXACTLY WHAT SIDES WE ACTUALLY NEED)
+	a3vec3 constraintToEndEffector;
+	a3real4Diff(baseToConstraint.v, endEffectorPositionInH.v, constraintPositionInH.v);
+
+	//Set up target distence elbow should be (NEED TO CONFIRM THAT WE ACTUALLY NEED A TARGET DISTANCE)
+	a3real targetDist;
+
+	//Get other triangle side lengths
+	a3real upperLength = a3real3Length(baseToConstraint.v);
+	a3real lowerLength = a3real3Length(constraintToEndEffector.v);
+
+	//TEMP UNTIL WE FIGURE OUT REAL WAY TO GET TARGET TIST
+	targetDist = upperLength + lowerLength;
+
+	a3real cosAngle = 0.0;
+	a3real angle;
+
+	//Calculates denominator for law of cosines equation
+	a3real denominator = 2 * upperLength * lowerLength;
+
+	//To make sure no division by zero
+	if (denominator > 0.01)
+	{
+		//Calculates actual cosine angle of triangle
+		cosAngle = (targetDist * targetDist + upperLength * upperLength + lowerLength * lowerLength) / denominator;
+	}
+
+	//Gets the angle of the limb hinge
+	angle = acos(cosAngle);
+
+	//Find new elbow position based on angle and limb plane normal
+
 	//5.use the look at function formula and fix sholder and elbow rotations
 
 	//last step
