@@ -377,6 +377,7 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 }
 
 extern float acos(float y_r);
+extern float sin(float y_r);
 void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 	a3_HierarchyState* activeHS, a3_HierarchyState const* baseHS, a3_HierarchyPoseGroup const* poseGroup,
 	a3ui32 const sceneGraphIndex_hierarchyObj, a3ui32 const sceneGraphIndex_effector_end, a3ui32 const sceneGraphIndex_constraint,
@@ -402,6 +403,7 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 //****TO-DO-ANIM-PROJECT-3: IMPLEMENT ME
 //-----------------------------------------------------------------------------
 
+	
 	//first step
 	//move everything into the space of the skeleton/heiarcy
 	//wrist effector
@@ -438,12 +440,12 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 
 	//4. LAW OF COSINES
 	// -> solve elbow position
-	a3mat4 hToS = activeHS->localSpaceInv[hierarchyObjIndex_affected_base].hpose_base->transformMat;
-
+	a3mat4 hToS = activeHS->localSpaceInv->hpose_base[hierarchyObjIndex_affected_base].transformMat;
+	a3mat4 sToH = activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat;
 
 
 	//Made additional side of triangle (NEED TO FIND OOUT EXACTLY WHAT SIDES WE ACTUALLY NEED)
-	a3vec3 constraintToEndEffector;
+	//a3vec3 constraintToEndEffector;
 	a3real3Diff(baseToConstraint.v, endEffectorPositionInH.v, constraintPositionInH.v);
 
 
@@ -457,85 +459,121 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 
 	//get the distance
 	a3vec4 sholderToElbow;
-	a3real4Diff(sholderToElbow.v, elbowPosition.v, activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.m);
+	a3real4Diff(sholderToElbow.v, elbowPosition.v, &activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.x);
 
 	a3vec4 sholderToWrist;
-	a3real4Diff(sholderToWrist.v, elbowPosition.v, activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.m);
+	a3real4Diff(sholderToWrist.v, wristPosition.v, &activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.x);
 
 	a3vec4 elbowToWrist;
 	a3real4Diff(elbowToWrist.v, wristPosition.v, elbowPosition.v);
 
-
+	//clamp wirst position :3
 	
+	a3real a = a3real4Length(sholderToElbow.v);
+	a3real b = a3real4Length(elbowToWrist.v);
+	a3real c = a3real4Length(sholderToWrist.v);
+
+	a3real denom = 2 * a * c;
+	a3real cosAngle = 0;
 
 
-	cosAngle = (targetDist * targetDist + upperLength * upperLength + lowerLength * lowerLength) / denominator;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	//Set up target distence elbow should be (NEED TO CONFIRM THAT WE ACTUALLY NEED A TARGET DISTANCE)
-	a3real targetDist;
-
-	//Get other triangle side lengths
-	a3real upperLength = a3real3Length(baseToConstraint.v);
-	a3real lowerLength = a3real3Length(constraintToEndEffector.v);
-
-	//TEMP UNTIL WE FIGURE OUT REAL WAY TO GET TARGET TIST
-	targetDist = upperLength + lowerLength;
-
-	a3real cosAngle = 0.0;
-	a3real angle;
-
-	//Calculates denominator for law of cosines equation
-	a3real denominator = 2 * upperLength * lowerLength;
-
-	//To make sure no division by zero
-	if (denominator > 0.01)
+	if (denom > 0.001)
 	{
-		//Calculates actual cosine angle of triangle
-		cosAngle = (targetDist * targetDist + upperLength * upperLength + lowerLength * lowerLength) / denominator;
+		cosAngle = ((a * a) + (c * c) - (b * b)) / denom;
 	}
+	
+	a3real fullAngle = acos(cosAngle);
 
-	//Gets the angle of the limb hinge
-	angle = acos(cosAngle);
+	a3real x = a * cosAngle;
+	a3real y = a * sin(fullAngle);
 
-	//Find new elbow position based on angle and limb plane normal
+
+	//set elbow position
+
+	a3vec4 newElbowPos;
+	a3real4Set(newElbowPos.v, x, y, 0, 1);
+
+
+	//set new basis
+
+	a3real4ProductTransform(limbPlaneNormal.v, limbPlaneNormal.v, hToS.m);
+
+	a3vec4 fwrd;
+	a3real3Cross(fwrd.v, limbPlaneNormal.v, elbowToWrist.v);
+	a3real4Normalize(fwrd.v);
+
+
+	//GO BACK
+	a3real4ProductTransform(fwrd.v, fwrd.v, sToH.m);
+	a3real4ProductTransform(limbPlaneNormal.v, limbPlaneNormal.v, sToH.m);
+	a3real4ProductTransform(elbowToWrist.v, elbowToWrist.v, sToH.m);
+	a3real4ProductTransform(newElbowPos.v, newElbowPos.v, sToH.m);
+	a3real4ProductTransform(sholderToElbow.v, sholderToElbow.v, sToH.m);
+
+	a3real4Normalize(elbowToWrist.v);
+	a3real4Normalize(sholderToElbow.v);
 
 	//5.use the look at function formula and fix sholder and elbow rotations
 
 	//last step
 	//resolve every affected joint
 	// ->do it in start closer to the root and go down
-	//a3kinematicsResolvePostIK()
-	//a3kinematicsResolvePostIK()
-	//a3kinematicsResolvePostIK()
+	
+	//sholder
+	a3mat4 finalJToObject;
+
+	a3vec4 sholderFwrd;
+
+	a3real3Cross(sholderFwrd.v, sholderToElbow.v, limbPlaneNormal.v );
+
+	a3real4Set(&finalJToObject.v1.x, sholderToElbow.x, sholderToElbow.y, sholderToElbow.z, 0);
+	a3real4Set(&finalJToObject.v0.x, limbPlaneNormal.x, limbPlaneNormal.y, limbPlaneNormal.z, 0);
+	a3real4Set(&finalJToObject.v2.x, sholderFwrd.x, sholderFwrd.y, sholderFwrd.z, 0);
+
+	//set translation
+	a3real4Set(&finalJToObject.v3.x, activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.x,
+		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.y,
+		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.z, 1);
+
+	
+	a3kinematicsResolvePostIK(activeHS, baseHS, poseGroup, hierarchyObjIndex_affected_base, finalJToObject.m);
+
+	return;
+	//elbow
+	a3real4Set(&finalJToObject.v0.x, elbowToWrist.x, elbowToWrist.y, elbowToWrist.z, 0);
+	a3real4Set(&finalJToObject.v2.x, limbPlaneNormal.x, limbPlaneNormal.y, limbPlaneNormal.z, 0);
+	a3real4Set(&finalJToObject.v1.x, fwrd.x, fwrd.y, fwrd.z, 0);
+	
+	//set translation
+	/*a3real4Set(&finalJToObject.v3.x, newElbowPos.x,
+		newElbowPos.y,
+		newElbowPos.z, 1);*/
+
+	a3real4Set(&finalJToObject.v3.x, activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_hinge].transformMat.v3.x,
+		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_hinge].transformMat.v3.y,
+		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_hinge].transformMat.v3.z, 1);
+
+	
+	a3kinematicsResolvePostIK(activeHS, baseHS, poseGroup, hierarchyObjIndex_affected_hinge, finalJToObject.m);
+
+
+	
+	//wirst
+	a3real4Set(&finalJToObject.v0.x, m_affected_end.v0.x, m_affected_end.v0.y, m_affected_end.v0.z, 0);
+	a3real4Set(&finalJToObject.v2.x, m_affected_end.v1.x, m_affected_end.v1.y, m_affected_end.v1.z, 0);
+	a3real4Set(&finalJToObject.v1.x, m_affected_end.v2.x, m_affected_end.v2.y, m_affected_end.v2.z, 0);
+
+	//set translation
+	/*a3real4Set(&finalJToObject.v3.x, endEffectorPositionInH.x,
+		endEffectorPositionInH.y,
+		endEffectorPositionInH.z, 1);*/
+
+
+	a3real4Set(&finalJToObject.v3.x, activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_end].transformMat.v3.x,
+		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_end].transformMat.v3.y,
+		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_end].transformMat.v3.z, 1);
+
+	a3kinematicsResolvePostIK(activeHS, baseHS, poseGroup, hierarchyObjIndex_affected_end, finalJToObject.m);
 	
 //-----------------------------------------------------------------------------
 //****END-TO-DO-PROJECT-3
