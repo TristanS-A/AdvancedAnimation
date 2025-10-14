@@ -342,8 +342,8 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 
 	//3. up basis = Cross(direction and side)
 	a3real3Cross(&basis.v1.x,
-		&basis.v0.x,
-		&basis.v2.x);
+		&basis.v2.x,
+		&basis.v0.x);
 
 	//4. normailize
 	a3real3Normalize(&basis.v0.x);
@@ -358,8 +358,8 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 	//Add the computed axes to the final joint to object mat (This is done wierdly where 
 	// the z axis is stored in column 2, the y axis in column 3, and the x axis in column 0
 	a3real4Set(&finalJToObject.v0.x, basis.v0.x, basis.v0.y, basis.v0.z, 0);
-	a3real4Set(&finalJToObject.v1.x, basis.v1.x, basis.v1.y, basis.v1.z, 0);
-	a3real4Set(&finalJToObject.v2.x, basis.v2.x, basis.v2.y, basis.v2.z, 0);
+	a3real4Set(&finalJToObject.v2.x, basis.v1.x, basis.v1.y, basis.v1.z, 0);
+	a3real4Set(&finalJToObject.v1.x, basis.v2.x, basis.v2.y, basis.v2.z, 0);
 
 	//Set translation -->in joint local space
 	a3real4Set(&finalJToObject.v3.x, activeHS->localSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.x,
@@ -438,10 +438,67 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 
 	//4. LAW OF COSINES
 	// -> solve elbow position
+	a3mat4 hToS = activeHS->localSpaceInv[hierarchyObjIndex_affected_base].hpose_base->transformMat;
+
+
 
 	//Made additional side of triangle (NEED TO FIND OOUT EXACTLY WHAT SIDES WE ACTUALLY NEED)
 	a3vec3 constraintToEndEffector;
 	a3real3Diff(baseToConstraint.v, endEffectorPositionInH.v, constraintPositionInH.v);
+
+
+	//move wrist into sholder 
+	a3vec4 wristPosition;
+	a3real4ProductTransform(wristPosition.v, endEffectorPositionInH.v, hToS.m);
+
+	//a3mat4 elbowS;
+	a3vec4 elbowPosition;
+	a3real4ProductTransform(wristPosition.v, &activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_hinge].transformMat.v3.x, hToS.m);
+
+	//get the distance
+	a3vec4 sholderToElbow;
+	a3real4Diff(sholderToElbow.v, elbowPosition.v, activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.m);
+
+	a3vec4 sholderToWrist;
+	a3real4Diff(sholderToWrist.v, elbowPosition.v, activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.m);
+
+	a3vec4 elbowToWrist;
+	a3real4Diff(elbowToWrist.v, wristPosition.v, elbowPosition.v);
+
+
+	
+
+
+	cosAngle = (targetDist * targetDist + upperLength * upperLength + lowerLength * lowerLength) / denominator;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	//Set up target distence elbow should be (NEED TO CONFIRM THAT WE ACTUALLY NEED A TARGET DISTANCE)
 	a3real targetDist;
