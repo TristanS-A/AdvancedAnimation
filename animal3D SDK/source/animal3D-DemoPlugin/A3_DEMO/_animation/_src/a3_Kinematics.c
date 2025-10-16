@@ -338,7 +338,7 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 	a3real3Set(&basis.v2.x, temp.x, temp.y, temp.z);
 
 	//Gets right basis --> join localSpace by our local y axis
-	a3real3Cross(&basis.v0.x, &a3vec3_y.x, &basis.v2.x);
+	a3real3Cross(&basis.v0.x, &m_affected.v2.x, &basis.v2.x);
 
 	//3. up basis = Cross(direction and side)
 	a3real3Cross(&basis.v1.x,
@@ -351,6 +351,7 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 	a3real3Normalize(&basis.v2.x);
 
 	a3mat4 finalJToObject;
+
 
 	//Change the basis to the affected basis I think
 	a3real3x3Product(basis.m, m_affected.m, basis.m);
@@ -404,16 +405,16 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 //-----------------------------------------------------------------------------
 
 	
-	//first step
-	//move everything into the space of the skeleton/heiarcy
-	//wrist effector
-	//pole vector 
-
 	a3mat4 rigToH = sceneGraphState->localSpaceInv->hpose_base[sceneGraphIndex_hierarchyObj].transformMat;
 
 	a3vec4 endEffectorPositionInH;
 	a3vec4 constraintPositionInH;
 
+	a3ui32 parentIndex = activeHS->hierarchy->nodes[hierarchyObjIndex_affected_base].parentIndex;
+	a3mat4 hToS = activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat;
+	a3mat4 sToH = activeHS->localSpaceInv->hpose_base[parentIndex].transformMat;
+
+	//this is right <3
 	a3real4ProductTransform(endEffectorPositionInH.v, &sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector_end].transformMat.v3.x, rigToH.m);
 	a3real4ProductTransform(constraintPositionInH.v, &sceneGraphState->localSpace->hpose_base[sceneGraphIndex_constraint].transformMat.v3.x, rigToH.m);
 
@@ -438,13 +439,12 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 
 	a3real3Normalize(limbPlaneNormal.v);
 
+	//a3real3Proj
 	//4. LAW OF COSINES
 	// -> solve elbow position
-	a3mat4 hToS = activeHS->localSpaceInv->hpose_base[hierarchyObjIndex_affected_base].transformMat;
-	a3mat4 sToH = activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat;
-
-	//a3vec3 constraintToEndEffector;
-	a3real3Diff(baseToConstraint.v, endEffectorPositionInH.v, constraintPositionInH.v);
+	
+	//a3vec3 constraintToEndEffector; -- this could ve a issue 
+	//a3real3Diff(baseToConstraint.v, endEffectorPositionInH.v, constraintPositionInH.v);
 
 	//move wrist into sholder 
 	a3vec4 wristPosition;
@@ -456,16 +456,16 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 
 	//get the distance
 	a3vec4 sholderToElbow;
-	a3real4Diff(sholderToElbow.v, elbowPosition.v, &activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.x);
+	a3real4Diff(sholderToElbow.v, elbowPosition.v, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.x);
 
 	a3vec4 sholderToWrist;
-	a3real4Diff(sholderToWrist.v, wristPosition.v, &activeHS->localSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.x);
+	a3real4Diff(sholderToWrist.v, wristPosition.v, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.x);
 
 	a3vec4 elbowToWrist;
 	a3real4Diff(elbowToWrist.v, wristPosition.v, elbowPosition.v);
 
 	//clamp wirst position :3
-	
+
 	a3real a = a3real3Length(sholderToElbow.v);
 	a3real b = a3real3Length(elbowToWrist.v);
 	a3real c = a3real3Length(sholderToWrist.v);
@@ -478,7 +478,7 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 	{
 		cosAngle = ((a * a) + (c * c) - (b * b)) / denom;
 	}
-	
+
 	a3real fullAngle = acosf(cosAngle);
 
 	a3real x = a * cosAngle;
@@ -515,7 +515,7 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 	//last step
 	//resolve every affected joint
 	// ->do it in start closer to the root and go down
-	
+
 	//sholder
 	a3mat4 finalJToObject;
 
@@ -545,7 +545,7 @@ void a3kinematicsUpdateLimbIK(a3_HierarchyState const* sceneGraphState,
 		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.y,
 		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected_base].transformMat.v3.z, 1);
 
-	
+
 	a3kinematicsResolvePostIK(activeHS, baseHS, poseGroup, hierarchyObjIndex_affected_base, finalJToObject.m);
 
 
