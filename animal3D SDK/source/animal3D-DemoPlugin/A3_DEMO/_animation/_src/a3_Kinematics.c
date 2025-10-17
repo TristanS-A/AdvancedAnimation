@@ -312,7 +312,81 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 	//****TO-DO-ANIM-PROJECT-3: IMPLEMENT ME
 	//-----------------------------------------------------------------------------
 
-		/////THE FOLLOWING IS THE WAY I UNDERSTAND IT BUT LOOKS WRONG (compared to example)
+
+	/////More accurate to example look at method
+
+	a3real4x4* hToRig = &sceneGraphState->localSpace->hpose_base[sceneGraphIndex_hierarchyObj].transformMat.m;
+	a3real4x4* rigToH = &sceneGraphState->localSpaceInv->hpose_base[sceneGraphIndex_hierarchyObj].transformMat.m;
+
+	a3vec4 effectorInH;
+
+	//Get effector in hierarchy space
+	a3real4ProductTransform(effectorInH.v, &sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector].transformMat.v3.x, *rigToH);
+
+	a3mat3 basis;
+	a3vec4 fwd;
+
+	a3ui32 parentIndex = activeHS->hierarchy->nodes[hierarchyObjIndex_affected].parentIndex;
+
+	//Gets a vector from effector to joint in hierarchy space
+	a3real4Diff(&fwd.x, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.x, effectorInH.v);
+
+	//Normalize displacment vector to get direction
+	a3real3Set(&basis.v2.x, fwd.x, fwd.y, fwd.z);
+	a3real3Normalize(&basis.v2.x);
+
+	//Gets right basis 
+	a3real3Cross(&basis.v0.x, &a3vec3_y.x, &basis.v2.x);
+	a3real3Normalize(&basis.v0.x);
+
+	//3. up basis = Cross(direction and right)
+	a3real3Cross(&basis.v1.x,
+		&basis.v2.x,
+		&basis.v0.x);
+
+	//4. normailize again to be sure 
+	a3real3Normalize(&basis.v0.x);
+	a3real3Normalize(&basis.v1.x);
+	a3real3Normalize(&basis.v2.x);
+
+	a3mat4 finalJToObject;
+
+	a3mat3 jointBasis;
+	a3real3Set(&jointBasis.v0.x, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v0.x, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v0.y, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v0.z);
+	a3real3Set(&jointBasis.v1.x, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v1.x, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v1.y, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v1.z);
+	a3real3Set(&jointBasis.v2.x, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v2.x, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v2.y, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v2.z);
+
+	//Puts the undo rotation of the parent joint into the space of the local 
+	// joint basis (Makes the rotation of the parent reversable for the local basis) I think?? 
+	a3real3x3Product(m_affected.m, m_affected.m, jointBasis.m);
+
+	//Makes new look at basis relative to the local basis of the current 
+	// joint (with no additional rotation from parent) maybe
+	a3real3x3Product(basis.m, m_affected.m, basis.m);
+
+	//Double check normalization
+	a3real3Normalize(&basis.v0.x);
+	a3real3Normalize(&basis.v1.x);
+	a3real3Normalize(&basis.v2.x);
+
+	//Set the new axes of the look matrix relative to the parent basis
+	// (v1 and v2 are flipped because a3basisToMat3 stores up in v2 and fwd in v1)
+	a3real4Set(&finalJToObject.v0.x, basis.v0.x, basis.v0.y, basis.v0.z, 0);
+	a3real4Set(&finalJToObject.v2.x, basis.v1.x, basis.v1.y, basis.v1.z, 0);
+	a3real4Set(&finalJToObject.v1.x, basis.v2.x, basis.v2.y, basis.v2.z, 0);
+
+	//Transformes the new look at basis to heirarchy space with no rotation from the parent (maybe??)
+	a3real4x4Product(finalJToObject.m, activeHS->objectSpace->hpose_base[parentIndex].transformMat.m, finalJToObject.m);
+
+	//Set translation -->in joint local space
+	a3real4Set(&finalJToObject.v3.x, activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.x,
+		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.y,
+		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.z, 1);
+
+	//Resolve post IK
+	a3kinematicsResolvePostIK(activeHS, baseHS, poseGroup, hierarchyObjIndex_affected, finalJToObject.m);
+
+	/////Another way that is not quite what 6the example looks like
 
 		//move everything into the space of the skeleton/heiarcy
 		//look at target
@@ -389,77 +463,6 @@ void a3kinematicsUpdateLookAtIK(a3_HierarchyState const* sceneGraphState,
 		//a3real4x4Product(finalJToObject.m, activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.m, finalJToObject.m);
 
 		a3kinematicsResolvePostIK(activeHS, baseHS, poseGroup, hierarchyObjIndex_affected, finalJToObject.m);*/
-
-
-
-
-		/////THE FOLLOWING IS LOOKS RIGHT BUT I DON"T FULLY UNDERSTAND WHY (compared to example)
-
-	a3real4x4* hToRig = &sceneGraphState->localSpace->hpose_base[sceneGraphIndex_hierarchyObj].transformMat.m;
-	a3real4x4* rigToH = &sceneGraphState->localSpaceInv->hpose_base[sceneGraphIndex_hierarchyObj].transformMat.m;
-
-	a3vec4 effectorInH;
-
-	//set to joint local space
-	a3real4ProductTransform(effectorInH.v, &sceneGraphState->localSpace->hpose_base[sceneGraphIndex_effector].transformMat.v3.x, *rigToH);
-	//move it to the space of our object
-
-	//a3vec4 displacement;
-	a3mat3 basis;
-	a3vec4 temp;
-
-	a3ui32 parentIndex = activeHS->hierarchy->nodes[hierarchyObjIndex_affected].parentIndex;
-
-	//Gets a vector from effector to joint --> joint local space
-	a3real4Diff(&temp.x, &activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.x, effectorInH.v);
-
-	//Normalize displacment vector to get direction --> join local space
-	a3real3Set(&basis.v2.x, temp.x, temp.y, temp.z);
-	a3real3Normalize(&basis.v2.x);
-
-	//Gets right basis --> join localSpace by our local y axis
-	a3real3Cross(&basis.v0.x, &a3vec3_y.x, &basis.v2.x);
-	a3real3Normalize(&basis.v0.x);
-
-	//3. up basis = Cross(direction and side)
-	a3real3Cross(&basis.v1.x,
-		&basis.v2.x,
-		&basis.v0.x);
-
-	//4. normailize
-	a3real3Normalize(&basis.v0.x);
-	a3real3Normalize(&basis.v1.x);
-	a3real3Normalize(&basis.v2.x);
-
-	a3mat4 finalJToObject;
-
-	a3mat3 jointBasis;
-	a3real3Set(&jointBasis.v0.x, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v0.x, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v0.y, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v0.z);
-	a3real3Set(&jointBasis.v1.x, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v1.x, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v1.y, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v1.z);
-	a3real3Set(&jointBasis.v2.x, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v2.x, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v2.y, activeHS->objectSpaceInv->hpose_base[parentIndex].transformMat.v2.z);
-
-	//Puts the undo rotation of the parent joint into the space of the local 
-	// joint basis (Makes the rotation of the parent reversable for the local basis) I think?? 
-	a3real3x3Product(m_affected.m, m_affected.m, jointBasis.m);
-
-	//Makes new look at basis relative to the local basis of the current 
-	// joint (with no additional rotation from parent)
-	a3real3x3Product(basis.m, m_affected.m, basis.m);
-
-	//Set the new axes of the look matrix relative to the parent basis
-	// (v1 and v2 are flipped because a3basisToMat3 stores up in v2 and fwd in v1)
-	a3real4Set(&finalJToObject.v0.x, basis.v0.x, basis.v0.y, basis.v0.z, 0);
-	a3real4Set(&finalJToObject.v2.x, basis.v1.x, basis.v1.y, basis.v1.z, 0);
-	a3real4Set(&finalJToObject.v1.x, basis.v2.x, basis.v2.y, basis.v2.z, 0);
-
-	//Transformes the new look at basis to heirarchy space with no rotation from the parent (maybe??)
-	a3real4x4Product(finalJToObject.m, activeHS->objectSpace->hpose_base[parentIndex].transformMat.m, finalJToObject.m);
-
-	//Set translation -->in joint local space
-	a3real4Set(&finalJToObject.v3.x, activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.x,
-		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.y,
-		activeHS->objectSpace->hpose_base[hierarchyObjIndex_affected].transformMat.v3.z, 1);
-	a3kinematicsResolvePostIK(activeHS, baseHS, poseGroup, hierarchyObjIndex_affected, finalJToObject.m);
 
 	//-----------------------------------------------------------------------------
 	//****END-TO-DO-PROJECT-3
