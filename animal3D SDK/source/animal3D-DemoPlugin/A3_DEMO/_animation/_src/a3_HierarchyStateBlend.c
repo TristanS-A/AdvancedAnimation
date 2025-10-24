@@ -37,6 +37,8 @@ a3ret a3spatialPoseBlendTreeCreate(a3_SpatialPoseBlendTree* blendTree, a3_Hierar
 {
 	if (!blendTree || !blendTreeDescriptor)
 		return -1;
+
+	blendTree->blendTreeDescriptor = blendTreeDescriptor;
 	return 0;
 }
 
@@ -45,6 +47,12 @@ a3ret a3spatialPoseBlendTreeRelease(a3_SpatialPoseBlendTree* blendTree)
 {
 	if (!blendTree)
 		return -1;
+	if (!blendTree->nodes)
+		return -1;
+
+	//un set the herarchy
+	blendTree->blendTreeDescriptor = 0;
+	//free the nodes but how??
 	return 0;
 }
 
@@ -53,6 +61,7 @@ a3ret a3spatialPoseBlendTreeConfigureNode(a3_SpatialPoseBlendTree const* blendTr
 {
 	if (!blendTree)
 		return -1;
+
 	return 0;
 }
 
@@ -61,6 +70,8 @@ a3ret a3spatialPoseBlendTreeExecute(a3_SpatialPoseBlendTree const* blendTree)
 {
 	if (!blendTree)
 		return -1;
+	//get the root node
+	a3_SpatialPoseBlendNode* root = blendTree->nodes;
 	return 0;
 }
 
@@ -74,6 +85,7 @@ a3real4r a3blendOpRET4(a3real4 v_out)
 
 a3real4r a3blendOpZERO4(a3real4 v_out)
 {
+
 	return v_out;
 }
 
@@ -287,6 +299,9 @@ a3_SpatialPose* a3spatialPoseOpIdentity(a3_SpatialPose* pose_out)
 {
 	pose_out->transformMat = a3mat4_identity;
 	// ...
+	pose_out->rotate = a3vec4_one;
+	pose_out->scale = a3vec4_one;
+	pose_out->translate = a3vec4_one;
 
 	// done
 	return pose_out;
@@ -295,6 +310,8 @@ a3_SpatialPose* a3spatialPoseOpIdentity(a3_SpatialPose* pose_out)
 // pointer-based LERP operation for single spatial pose
 a3_SpatialPose* a3spatialPoseOpLERP(a3_SpatialPose* pose_out, a3_SpatialPose const* pose0, a3_SpatialPose const* pose1, a3real const u)
 {
+	//will wrote
+	a3spatialPoseLerp(pose_out, pose0, pose1, u);
 
 	// done
 	return pose_out;
@@ -306,7 +323,12 @@ a3_SpatialPose* a3spatialPoseOpLERP(a3_SpatialPose* pose_out, a3_SpatialPose con
 // pointer-based reset/identity operation for hierarchical pose
 a3_HierarchyPose* a3hierarchyPoseOpIdentity(a3_HierarchyPose* pose_out)
 {
-
+	//this might need to be for each hpose
+	pose_out->hpose_base->transformMat = a3mat4_identity;
+	// ...
+	pose_out->hpose_base->rotate = a3vec4_one;
+	pose_out->hpose_base->scale = a3vec4_one;
+	pose_out->hpose_base->translate = a3vec4_one;
 	// done
 	return pose_out;
 }
@@ -314,6 +336,26 @@ a3_HierarchyPose* a3hierarchyPoseOpIdentity(a3_HierarchyPose* pose_out)
 // pointer-based LERP operation for hierarchical pose
 a3_HierarchyPose* a3hierarchyPoseOpLERP(a3_HierarchyPose* pose_out, a3_HierarchyPose const* pose0, a3_HierarchyPose const* pose1, a3real const u)
 {
+	//mising a node group?
+	//a3hierarchyPoseLerp(pose_out, pose0, pose1, u)
+
+	// angles: lerp is ok for the purposes of what we're doing
+		// to-do: check channels
+	pose_out->hpose_base->rotate.v[0] = (pose1->hpose_base->rotate.v[0] - pose0->hpose_base->rotate.v[0]) * u + pose0->hpose_base->rotate.v[0];
+	pose_out->hpose_base->rotate.v[1] = (pose1->hpose_base->rotate.v[1] - pose0->hpose_base->rotate.v[1]) * u + pose0->hpose_base->rotate.v[1];
+	pose_out->hpose_base->rotate.v[2] = (pose1->hpose_base->rotate.v[2] - pose0->hpose_base->rotate.v[2]) * u + pose0->hpose_base->rotate.v[2];
+
+	// scale: log-lerp
+	// to-do: check channels
+	pose_out->hpose_base->scale.v[0] = powf(pose1->hpose_base->scale.v[0] / pose0->hpose_base->scale.v[0], u) * pose0->hpose_base->scale.v[0];
+	pose_out->hpose_base->scale.v[1] = powf(pose1->hpose_base->scale.v[1] / pose0->hpose_base->scale.v[1], u) * pose0->hpose_base->scale.v[1];
+	pose_out->hpose_base->scale.v[2] = powf(pose1->hpose_base->scale.v[2] / pose0->hpose_base->scale.v[2], u) * pose0->hpose_base->scale.v[2];
+
+	// translate: lerp
+	// to-do: check channels
+	pose_out->hpose_base->translate.v[0] = (pose1->hpose_base->translate.v[0] - pose0->hpose_base->translate.v[0]) * u + pose0->hpose_base->translate.v[0];
+	pose_out->hpose_base->translate.v[1] = (pose1->hpose_base->translate.v[1] - pose0->hpose_base->translate.v[1]) * u + pose0->hpose_base->translate.v[1];
+	pose_out->hpose_base->translate.v[2] = (pose1->hpose_base->translate.v[2] - pose0->hpose_base->translate.v[2]) * u + pose0->hpose_base->translate.v[2];
 
 	// done
 	return pose_out;
