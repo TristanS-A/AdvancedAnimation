@@ -24,6 +24,9 @@
 
 #include "../a3_HierarchyStateBlend.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 //-----------------------------------------------------------------------------
 //****TO-DO-ANIM-PROJECT-4: IMPLEMENT ME
@@ -39,6 +42,12 @@ a3ret a3spatialPoseBlendTreeCreate(a3_SpatialPoseBlendTree* blendTree, a3_Hierar
 		return -1;
 
 	blendTree->blendTreeDescriptor = blendTreeDescriptor;
+
+	//Allocates the amount of memory for the number of nodes
+	const a3ui32 dataSize = sizeof(a3_SpatialPoseBlendNode) * blendTreeDescriptor->numNodes;
+	blendTree->nodes = (a3_SpatialPoseBlendNode*)malloc(dataSize);
+	memset(blendTree->nodes, 0, dataSize);
+
 	return 0;
 }
 
@@ -50,28 +59,48 @@ a3ret a3spatialPoseBlendTreeRelease(a3_SpatialPoseBlendTree* blendTree)
 	if (!blendTree->nodes)
 		return -1;
 
-	//un set the herarchy
+	//Free's memory
+	free(blendTree->nodes);
+
+	//un set the herarchy and nodes
 	blendTree->blendTreeDescriptor = 0;
-	//free the nodes but how??
+	blendTree->nodes = 0;
+
 	return 0;
 }
 
 // configure node internally; set pointers
-a3ret a3spatialPoseBlendTreeConfigureNode(a3_SpatialPoseBlendTree const* blendTree, a3ui32 const nodeIndex)
+a3ret a3spatialPoseBlendTreeConfigureNode(a3_SpatialPoseBlendTree const* blendTree, a3ui32 const nodeIndex,
+	a3_SpatialPose const* inPose1, a3_SpatialPose const* inPose2, a3_SpatialPose* outPose, const a3_BlendOpSet* blendOpSet)
 {
 	if (!blendTree)
 		return -1;
+
+	blendTree->nodes[nodeIndex].blendOpSet = blendOpSet;
+
+	//Configures input and output pointers for node
+	blendTree->nodes[nodeIndex].pose_out = outPose;
+	blendTree->nodes[nodeIndex].pose_ctrl[0] = inPose1;
+	blendTree->nodes[nodeIndex].pose_ctrl[1] = inPose2;
 
 	return 0;
 }
 
 // execute tree from leaves to root
-a3ret a3spatialPoseBlendTreeExecute(a3_SpatialPoseBlendTree const* blendTree)
+a3ret a3spatialPoseBlendTreeExecute(a3_SpatialPoseBlendTree const* blendTree, a3real u)
 {
 	if (!blendTree)
 		return -1;
+
 	//get the root node
 	a3_SpatialPoseBlendNode* root = blendTree->nodes;
+
+	for (a3ui32 i = 0; i < blendTree->blendTreeDescriptor->numNodes; i++)
+	{
+		blendTree->nodes[i].u[0] = &u;
+		blendTree->nodes[i].blendOpSet->exec;
+	}
+
 	return 0;
 }
 
@@ -341,21 +370,21 @@ a3_HierarchyPose* a3hierarchyPoseOpLERP(a3_HierarchyPose* pose_out, a3_Hierarchy
 
 	// angles: lerp is ok for the purposes of what we're doing
 		// to-do: check channels
-	pose_out->hpose_base->rotate.v[0] = (pose1->hpose_base->rotate.v[0] - pose0->hpose_base->rotate.v[0]) * u + pose0->hpose_base->rotate.v[0];
-	pose_out->hpose_base->rotate.v[1] = (pose1->hpose_base->rotate.v[1] - pose0->hpose_base->rotate.v[1]) * u + pose0->hpose_base->rotate.v[1];
-	pose_out->hpose_base->rotate.v[2] = (pose1->hpose_base->rotate.v[2] - pose0->hpose_base->rotate.v[2]) * u + pose0->hpose_base->rotate.v[2];
+	//pose_out->hpose_base->rotate.v[0] = (pose1->hpose_base->rotate.v[0] - pose0->hpose_base->rotate.v[0]) * u + pose0->hpose_base->rotate.v[0];
+	//pose_out->hpose_base->rotate.v[1] = (pose1->hpose_base->rotate.v[1] - pose0->hpose_base->rotate.v[1]) * u + pose0->hpose_base->rotate.v[1];
+	//pose_out->hpose_base->rotate.v[2] = (pose1->hpose_base->rotate.v[2] - pose0->hpose_base->rotate.v[2]) * u + pose0->hpose_base->rotate.v[2];
 
-	// scale: log-lerp
-	// to-do: check channels
-	pose_out->hpose_base->scale.v[0] = powf(pose1->hpose_base->scale.v[0] / pose0->hpose_base->scale.v[0], u) * pose0->hpose_base->scale.v[0];
-	pose_out->hpose_base->scale.v[1] = powf(pose1->hpose_base->scale.v[1] / pose0->hpose_base->scale.v[1], u) * pose0->hpose_base->scale.v[1];
-	pose_out->hpose_base->scale.v[2] = powf(pose1->hpose_base->scale.v[2] / pose0->hpose_base->scale.v[2], u) * pose0->hpose_base->scale.v[2];
+	//// scale: log-lerp
+	//// to-do: check channels
+	//pose_out->hpose_base->scale.v[0] = powf(pose1->hpose_base->scale.v[0] / pose0->hpose_base->scale.v[0], u) * pose0->hpose_base->scale.v[0];
+	//pose_out->hpose_base->scale.v[1] = powf(pose1->hpose_base->scale.v[1] / pose0->hpose_base->scale.v[1], u) * pose0->hpose_base->scale.v[1];
+	//pose_out->hpose_base->scale.v[2] = powf(pose1->hpose_base->scale.v[2] / pose0->hpose_base->scale.v[2], u) * pose0->hpose_base->scale.v[2];
 
-	// translate: lerp
-	// to-do: check channels
-	pose_out->hpose_base->translate.v[0] = (pose1->hpose_base->translate.v[0] - pose0->hpose_base->translate.v[0]) * u + pose0->hpose_base->translate.v[0];
-	pose_out->hpose_base->translate.v[1] = (pose1->hpose_base->translate.v[1] - pose0->hpose_base->translate.v[1]) * u + pose0->hpose_base->translate.v[1];
-	pose_out->hpose_base->translate.v[2] = (pose1->hpose_base->translate.v[2] - pose0->hpose_base->translate.v[2]) * u + pose0->hpose_base->translate.v[2];
+	//// translate: lerp
+	//// to-do: check channels
+	//pose_out->hpose_base->translate.v[0] = (pose1->hpose_base->translate.v[0] - pose0->hpose_base->translate.v[0]) * u + pose0->hpose_base->translate.v[0];
+	//pose_out->hpose_base->translate.v[1] = (pose1->hpose_base->translate.v[1] - pose0->hpose_base->translate.v[1]) * u + pose0->hpose_base->translate.v[1];
+	//pose_out->hpose_base->translate.v[2] = (pose1->hpose_base->translate.v[2] - pose0->hpose_base->translate.v[2]) * u + pose0->hpose_base->translate.v[2];
 
 	// done
 	return pose_out;

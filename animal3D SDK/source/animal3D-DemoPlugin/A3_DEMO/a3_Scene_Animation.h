@@ -203,6 +203,9 @@ extern "C"
 		
 		// blend tree
 		a3_Hierarchy blendTree[1];
+
+		//Blend tree
+		a3_SpatialPoseBlendTree newBlendTree[1];
 		union {
 			a3_HierarchyState hierarchyState_skel_blend[5];
 			struct {
@@ -222,6 +225,7 @@ extern "C"
 		a3_BlendOpSet blendOpID[1], blendOpRET[1], blendOpCOPY[1], blendOpINV[1],
 			blendOpCONCAT[1], blendOpDECONCAT[1], blendOpSCALE[1],
 			blendOpNEAR[1], blendOpLERP[1];
+
 		// input axes & integration variables
 		a3f64 axis_l[2], axis_r[2];
 		a3vec2 pos, vel, acc;

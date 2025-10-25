@@ -728,6 +728,14 @@ void a3animation_init_animation(a3_DemoState const* demoState, a3_Scene_Animatio
 	scene->obj_teapot->scale.x = a3real_half;
 	scene->obj_teapot->scaleMode = 1;
 
+	a3spatialPoseBlendTreeCreate(scene->newBlendTree, scene->hierarchyState_skel_base->hierarchy);
+
+	for (a3ui32 i = 0; i < scene->hierarchyState_skel_base->hierarchy->numNodes; i++)
+	{
+		a3spatialPoseBlendTreeConfigureNode(scene->newBlendTree, i, scene->hierarchyState_skel_base->objectSpace->hpose_base + i,
+			scene->hierarchyState_skel_base->objectSpace->hpose_base + i,
+			scene->hierarchyState_skel_blend_idle_fm_blend->animPose->hpose_base + i, scene->blendOpLERP);
+	}
 
 	// effectors
 	// do one update to get first pose for target IK frame
@@ -855,7 +863,6 @@ void a3animation_load(a3_DemoState const* demoState, a3_Scene_Animation* scene)
 
 	scene->targetCount[animation_passScene] = animation_target_scene_max;
 	scene->targetCount[animation_passComposite] = 1;
-
 
 	// setup
 	a3animation_init_animation(demoState, scene);

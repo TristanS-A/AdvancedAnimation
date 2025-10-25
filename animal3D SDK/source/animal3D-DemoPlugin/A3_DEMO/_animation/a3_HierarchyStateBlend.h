@@ -163,10 +163,11 @@ a3ret a3spatialPoseBlendTreeCreate(a3_SpatialPoseBlendTree* blendTree, a3_Hierar
 a3ret a3spatialPoseBlendTreeRelease(a3_SpatialPoseBlendTree* blendTree);
 
 // configure node internally; set pointers
-a3ret a3spatialPoseBlendTreeConfigureNode(a3_SpatialPoseBlendTree const* blendTree, a3ui32 const nodeIndex);
+a3ret a3spatialPoseBlendTreeConfigureNode(a3_SpatialPoseBlendTree const* blendTree, a3ui32 const nodeIndex,
+	a3_SpatialPose const* inPose1, a3_SpatialPose const* inPose2, a3_SpatialPose* outPose, const a3_BlendOpSet* blendOpSet);
 
 // execute tree from leaves to root
-a3ret a3spatialPoseBlendTreeExecute(a3_SpatialPoseBlendTree const* blendTree);
+a3ret a3spatialPoseBlendTreeExecute(a3_SpatialPoseBlendTree const* blendTree, a3real u);
 
 
 //-----------------------------------------------------------------------------
