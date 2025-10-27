@@ -79,9 +79,11 @@ a3ret a3spatialPoseBlendTreeConfigureNode(a3_SpatialPoseBlendTree const* blendTr
 	blendTree->nodes[nodeIndex].blendOpSet = blendOpSet;
 
 	//Configures input and output pointers for node
-	blendTree->nodes[nodeIndex].pose_out = outPose;
-	blendTree->nodes[nodeIndex].pose_ctrl[0] = inPose1;
-	blendTree->nodes[nodeIndex].pose_ctrl[1] = inPose2;
+	blendTree->nodes[nodeIndex].pose_out = outPose; //for set up this shoudl be 
+	blendTree->nodes[nodeIndex].pose_ctrl[0] = inPose1; //this should be pose out parent1
+	blendTree->nodes[nodeIndex].pose_ctrl[1] = inPose2; //this should be pose out parrent2
+	blendTree->nodes[nodeIndex].vCount = 2;
+
 
 	return 0;
 }
@@ -94,11 +96,33 @@ a3ret a3spatialPoseBlendTreeExecute(a3_SpatialPoseBlendTree const* blendTree, a3
 
 	//get the root node
 	a3_SpatialPoseBlendNode* root = blendTree->nodes;
-
+	a3_BlendOp op;
 	for (a3ui32 i = 0; i < blendTree->blendTreeDescriptor->numNodes; i++)
 	{
 		blendTree->nodes[i].u[0] = &u;
-		blendTree->nodes[i].blendOpSet->exec;
+		blendTree->nodes[i].uCount = 1;
+
+		//create blend op for rotate
+		
+		op.op = blendTree->nodes[i].blendOpSet->op_rotate;
+		op.v_out = &blendTree->nodes[i].pose_out->rotate.r;
+		
+		//fill conrols
+		for (int j = 0; j < blendTree->nodes[i].vCount; j++)
+		{
+			op.v_ctrl[j] = &blendTree->nodes[i].pose_ctrl[j]->rotate.x;
+		}
+
+		for (int j = 0; j < blendTree->nodes[i].uCount; j++)
+		{
+			op.u[j] = blendTree->nodes[i].u[j];
+		}
+
+		op.vCount = blendTree->nodes[i].vCount;
+		op.uCount = blendTree->nodes[i].uCount;
+
+		op.exec = blendTree->nodes[i].blendOpSet->exec;
+		blendTree->nodes[i].blendOpSet->exec(&op);
 	}
 
 	return 0;
@@ -195,6 +219,10 @@ a3real4r a3blendOpNEAR4(a3real4 v_out, a3real4 const v0, a3real4 const v1, a3rea
 
 a3real4r a3blendOpLERP4(a3real4 v_out, a3real4 const v0, a3real4 const v1, a3real const u)
 {
+	 v_out[0] = (v1[0] - v0[0]) * u + v0[0];
+	 v_out[1] = (v1[1] - v0[1]) * u + v0[1];
+	 v_out[2] = (v1[2] - v0[2]) * u + v0[2];
+
 	return v_out;
 }
 
