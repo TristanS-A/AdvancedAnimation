@@ -88,7 +88,7 @@ a3ret a3spatialPoseBlendTreeConfigureNode(a3_SpatialPoseBlendTree const* blendTr
 	return 0;
 }
 
-// execute tree from leaves to root
+// does not execute tree from leaves to root
 a3ret a3spatialPoseBlendTreeExecute(a3_SpatialPoseBlendTree const* blendTree, a3real u)
 {
 	if (!blendTree)

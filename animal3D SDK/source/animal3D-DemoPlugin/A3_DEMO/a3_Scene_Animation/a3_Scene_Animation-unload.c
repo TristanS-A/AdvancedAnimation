@@ -44,7 +44,9 @@ void a3animation_unload(a3_DemoState const* demoState, a3_Scene_Animation* scene
 		a3hierarchyStateRelease(scene->hierarchyState_skel_blend + i);
 	a3hierarchyRelease(scene->blendTree);
 
+	//Release both blend trees
 	a3spatialPoseBlendTreeRelease(scene->newBlendTree);
+	a3spatialPoseBlendTreeRelease(scene->newBlendTree + 1);
 
 	// release skeleton and related assets
 	a3ui32 const n_hierarchy = sizeof(scene->hierarchyState_skel) / sizeof(a3_HierarchyState);

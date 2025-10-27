@@ -225,19 +225,20 @@ void a3animation_update_animation_skeletal(
 	// do blending here
 	//	-> interpolate idle_f/idle_m -> idle_fm
 	//	-> interpolate idle_fm/idle_p -> result
-	a3hierarchyPoseLerp(scene->hierarchyState_skel_blend_idle_fm_blend->animPose,	// dst: idle_fm
-		scene->hierarchyState_skel_blend_idle_f->animPose,							// src(0): idle_f
-		scene->hierarchyState_skel_blend_idle_m->animPose,							// src(1): idle_m
-		a3real_half, activeHS->hierarchy->numNodes);
+	//a3hierarchyPoseLerp(scene->hierarchyState_skel_blend_idle_fm_blend->animPose,	// dst: idle_fm
+	//	scene->hierarchyState_skel_blend_idle_f->animPose,							// src(0): idle_f
+	//	scene->hierarchyState_skel_blend_idle_m->animPose,							// src(1): idle_m
+	//	a3real_half, activeHS->hierarchy->numNodes);
 
-	//Add blend tree execute here
-	a3spatialPoseBlendTreeExecute(scene->newBlendTree, a3real_one);
+	//Execute blend trees in order
+	a3spatialPoseBlendTreeExecute(scene->newBlendTree, a3real_half);
+	a3spatialPoseBlendTreeExecute(scene->newBlendTree + 1, a3real_half);
 
 
-	a3hierarchyPoseLerp(scene->hierarchyState_skel_blend_result->animPose,			// dst: blend tree result
-		scene->hierarchyState_skel_blend_idle_fm_blend->animPose,					// src(0): idle_fm
-		scene->hierarchyState_skel_blend_idle_p->animPose,							// src(1): idle_p
-		a3real_half, activeHS->hierarchy->numNodes);
+	//a3hierarchyPoseLerp(scene->hierarchyState_skel_blend_result->animPose,			// dst: blend tree result
+	//	scene->hierarchyState_skel_blend_idle_fm_blend->animPose,					// src(0): idle_fm
+	//	scene->hierarchyState_skel_blend_idle_p->animPose,							// src(1): idle_p
+	//	a3real_half, activeHS->hierarchy->numNodes);
 
 	// resolve final FK state:
 	// copy result to fk and run FK pipeline
