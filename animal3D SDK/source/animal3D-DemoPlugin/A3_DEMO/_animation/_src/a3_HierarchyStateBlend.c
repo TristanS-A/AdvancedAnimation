@@ -191,32 +191,57 @@ a3real4r a3blendOpRET4(a3real4 v_out)
 
 a3real4r a3blendOpZERO4(a3real4 v_out)
 {
+	v_out[0] = 0;
+	v_out[1] = 0;
+	v_out[2] = 0;
+	v_out[3] = 0;
 
 	return v_out;
 }
 
 a3real4r a3blendOpONE4(a3real4 v_out)
 {
+	v_out[0] = 1;
+	v_out[1] = 1;
+	v_out[2] = 1;
+	v_out[3] = 1;
+
 	return v_out;
 }
 
 a3real4r a3blendOpID4(a3real4 v_out)
 {
+	v_out[0] = 0;
+	v_out[1] = 0;
+	v_out[2] = 0;
+	v_out[3] = 0;
 	return v_out;
 }
 
 a3real4r a3blendOpCOPY4(a3real4 v_out, a3real4 const v)
 {
+	v_out[0] = v[0];
+	v_out[1] = v[1];
+	v_out[2] = v[2];
+	v_out[3] = v[3];
 	return v_out;
 }
 
 a3real4r a3blendOpNEGATE4(a3real4 v_out, a3real4 const v)
 {
+	v_out[0] = -v[0];
+	v_out[1] = -v[1];
+	v_out[2] = -v[2];
+	v_out[3] = -v[3];
 	return v_out;
 }
 
 a3real4r a3blendOpRECIP4(a3real4 v_out, a3real4 const v)
 {
+	v_out[0] = 1/v[0];
+	v_out[1] = 1/v[1];
+	v_out[2] = 1/v[2];
+	v_out[3] = 1/v[3];
 	return v_out;
 }
 
@@ -227,21 +252,37 @@ a3real4r a3blendOpCONJQ4(a3real4 v_out, a3real4 const v)
 
 a3real4r a3blendOpADD4(a3real4 v_out, a3real4 const v0, a3real4 const v1)
 {
+	v_out[0] = v0[0] + v1[0];
+	v_out[1] = v0[1] + v1[1];
+	v_out[2] = v0[2] + v1[2];
+	v_out[3] = v0[3] + v1[3];
 	return v_out;
 }
 
 a3real4r a3blendOpSUB4(a3real4 v_out, a3real4 const v0, a3real4 const v1)
 {
+	v_out[0] = v0[0] - v1[0];
+	v_out[1] = v0[1] - v1[1];
+	v_out[2] = v0[2] - v1[2];
+	v_out[3] = v0[3] - v1[3];
 	return v_out;
 }
 
 a3real4r a3blendOpMUL4(a3real4 v_out, a3real4 const v0, a3real4 const v1)
 {
+	v_out[0] = v0[0] * v1[0];
+	v_out[1] = v0[1] * v1[1];
+	v_out[2] = v0[2] * v1[2];
+	v_out[3] = v0[3] * v1[3];
 	return v_out;
 }
 
 a3real4r a3blendOpDIV4(a3real4 v_out, a3real4 const v0, a3real4 const v1)
 {
+	v_out[0] = v0[0] / v1[0];
+	v_out[1] = v0[1] / v1[1];
+	v_out[2] = v0[2] / v1[2];
+	v_out[3] = v0[3] / v1[3];
 	return v_out;
 }
 
@@ -257,16 +298,37 @@ a3real4r a3blendOpMULCONJQ4(a3real4 v_out, a3real4 const v0, a3real4 const v1)
 
 a3real4r a3blendOpSCALE4(a3real4 v_out, a3real4 const v, a3real const u)
 {
+	v_out[0] = v[0] * u;
+	v_out[1] = v[1] * u;
+	v_out[2] = v[2] * u;
+	v_out[3] = v[3] * u;
 	return v_out;
 }
 
+extern float powf(float b, float e);//#include <math.h>
 a3real4r a3blendOpPOW4(a3real4 v_out, a3real4 const v, a3real const u)
 {
+
+	v_out[0] = powf(v[0], u);
+	v_out[1] = powf(v[1], u);
+	v_out[2] = powf(v[2], u);
+	v_out[3] = powf(v[3], u);
+
 	return v_out;
 }
 
 a3real4r a3blendOpNEAR4(a3real4 v_out, a3real4 const v0, a3real4 const v1, a3real const u)
 {
+	if (u < 0.5)
+	{
+		a3real4Set(v_out, v0[0], v0[1], v0[2], v0[3]);
+	}
+	else 
+	{
+		a3real4Set(v_out, v1[0], v1[1], v1[2], v1[3]);
+		//v_out = v1;
+	}
+	
 	return v_out;
 }
 
@@ -276,16 +338,20 @@ a3real4r a3blendOpLERP4(a3real4 v_out, a3real4 const v0, a3real4 const v1, a3rea
 	 v_out[1] = (v1[1] - v0[1]) * u + v0[1];
 	 v_out[2] = (v1[2] - v0[2]) * u + v0[2];
 
-	return v_out;
+	 return v_out;
 }
 
 a3real4r a3blendOpNLERP4(a3real4 v_out, a3real4 const v0, a3real4 const v1, a3real const u)
 {
+	//a + t(b-a)
+	a3real4NLerp(v_out, v0, v1, u);
+	//a3real4Normalize(v_out);
 	return v_out;
 }
 
 a3real4r a3blendOpSLERP4(a3real4 v_out, a3real4 const v0, a3real4 const v1, a3real const u)
 {
+	a3real4Slerp(v_out, v0, v1, u);
 	return v_out;
 }
 
@@ -383,6 +449,7 @@ a3real4r a3blendOpMULM4X4(a3real4 m_out, a3real4 const m0, a3real4 const m1)
 
 a3real4r a3blendOpMULINVR4X4(a3real4 m_out, a3real4 const m0, a3real4 const m1)
 {
+
 	return m_out;
 }
 
@@ -398,6 +465,7 @@ a3real4r a3blendOpNEAR4X4(a3real4 m_out, a3real4 const m0, a3real4 const m1, a3r
 
 a3real4r a3blendOpLERP4X4(a3real4 m_out, a3real4 const m0, a3real4 const m1, a3real const u)
 {
+
 	return m_out;
 }
 
@@ -443,29 +511,30 @@ a3_HierarchyPose* a3hierarchyPoseOpIdentity(a3_HierarchyPose* pose_out)
 	return pose_out;
 }
 
+extern float powf(float b, float e);//#include <math.h>
 // pointer-based LERP operation for hierarchical pose
 a3_HierarchyPose* a3hierarchyPoseOpLERP(a3_HierarchyPose* pose_out, a3_HierarchyPose const* pose0, a3_HierarchyPose const* pose1, a3real const u)
 {
 	//mising a node group?
 	//a3hierarchyPoseLerp(pose_out, pose0, pose1, u)
 
-	// angles: lerp is ok for the purposes of what we're doing
-		// to-do: check channels
-	//pose_out->hpose_base->rotate.v[0] = (pose1->hpose_base->rotate.v[0] - pose0->hpose_base->rotate.v[0]) * u + pose0->hpose_base->rotate.v[0];
-	//pose_out->hpose_base->rotate.v[1] = (pose1->hpose_base->rotate.v[1] - pose0->hpose_base->rotate.v[1]) * u + pose0->hpose_base->rotate.v[1];
-	//pose_out->hpose_base->rotate.v[2] = (pose1->hpose_base->rotate.v[2] - pose0->hpose_base->rotate.v[2]) * u + pose0->hpose_base->rotate.v[2];
+	 //angles: lerp is ok for the purposes of what we're doing
+		 //to-do: check channels
+	pose_out->hpose_base->rotate.v[0] = (pose1->hpose_base->rotate.v[0] - pose0->hpose_base->rotate.v[0]) * u + pose0->hpose_base->rotate.v[0];
+	pose_out->hpose_base->rotate.v[1] = (pose1->hpose_base->rotate.v[1] - pose0->hpose_base->rotate.v[1]) * u + pose0->hpose_base->rotate.v[1];
+	pose_out->hpose_base->rotate.v[2] = (pose1->hpose_base->rotate.v[2] - pose0->hpose_base->rotate.v[2]) * u + pose0->hpose_base->rotate.v[2];
 
-	//// scale: log-lerp
-	//// to-do: check channels
-	//pose_out->hpose_base->scale.v[0] = powf(pose1->hpose_base->scale.v[0] / pose0->hpose_base->scale.v[0], u) * pose0->hpose_base->scale.v[0];
-	//pose_out->hpose_base->scale.v[1] = powf(pose1->hpose_base->scale.v[1] / pose0->hpose_base->scale.v[1], u) * pose0->hpose_base->scale.v[1];
-	//pose_out->hpose_base->scale.v[2] = powf(pose1->hpose_base->scale.v[2] / pose0->hpose_base->scale.v[2], u) * pose0->hpose_base->scale.v[2];
+	// scale: log-lerp
+	// to-do: check channels
+	pose_out->hpose_base->scale.v[0] = powf(pose1->hpose_base->scale.v[0] / pose0->hpose_base->scale.v[0], u) * pose0->hpose_base->scale.v[0];
+	pose_out->hpose_base->scale.v[1] = powf(pose1->hpose_base->scale.v[1] / pose0->hpose_base->scale.v[1], u) * pose0->hpose_base->scale.v[1];
+	pose_out->hpose_base->scale.v[2] = powf(pose1->hpose_base->scale.v[2] / pose0->hpose_base->scale.v[2], u) * pose0->hpose_base->scale.v[2];
 
-	//// translate: lerp
-	//// to-do: check channels
-	//pose_out->hpose_base->translate.v[0] = (pose1->hpose_base->translate.v[0] - pose0->hpose_base->translate.v[0]) * u + pose0->hpose_base->translate.v[0];
-	//pose_out->hpose_base->translate.v[1] = (pose1->hpose_base->translate.v[1] - pose0->hpose_base->translate.v[1]) * u + pose0->hpose_base->translate.v[1];
-	//pose_out->hpose_base->translate.v[2] = (pose1->hpose_base->translate.v[2] - pose0->hpose_base->translate.v[2]) * u + pose0->hpose_base->translate.v[2];
+	// translate: lerp
+	// to-do: check channels
+	pose_out->hpose_base->translate.v[0] = (pose1->hpose_base->translate.v[0] - pose0->hpose_base->translate.v[0]) * u + pose0->hpose_base->translate.v[0];
+	pose_out->hpose_base->translate.v[1] = (pose1->hpose_base->translate.v[1] - pose0->hpose_base->translate.v[1]) * u + pose0->hpose_base->translate.v[1];
+	pose_out->hpose_base->translate.v[2] = (pose1->hpose_base->translate.v[2] - pose0->hpose_base->translate.v[2]) * u + pose0->hpose_base->translate.v[2];
 
 	// done
 	return pose_out;
