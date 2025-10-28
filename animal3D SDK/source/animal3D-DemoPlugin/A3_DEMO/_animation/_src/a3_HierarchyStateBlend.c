@@ -123,6 +123,59 @@ a3ret a3spatialPoseBlendTreeExecute(a3_SpatialPoseBlendTree const* blendTree, a3
 
 		op.exec = blendTree->nodes[i].blendOpSet->exec;
 		blendTree->nodes[i].blendOpSet->exec(&op);
+
+		//translation
+		blendTree->nodes[i].u[0] = &u;
+		blendTree->nodes[i].uCount = 1;
+
+		//create blend op for rotate
+
+		op.op = blendTree->nodes[i].blendOpSet->op_rotate;
+		op.v_out = &blendTree->nodes[i].pose_out->translate.r;
+
+		//fill conrols
+		for (int j = 0; j < blendTree->nodes[i].vCount; j++)
+		{
+			op.v_ctrl[j] = &blendTree->nodes[i].pose_ctrl[j]->translate.x;
+		}
+
+		for (int j = 0; j < blendTree->nodes[i].uCount; j++)
+		{
+			op.u[j] = blendTree->nodes[i].u[j];
+		}
+
+		op.vCount = blendTree->nodes[i].vCount;
+		op.uCount = blendTree->nodes[i].uCount;
+
+		op.exec = blendTree->nodes[i].blendOpSet->exec;
+		blendTree->nodes[i].blendOpSet->exec(&op);
+		
+
+		//scale
+		blendTree->nodes[i].u[0] = &u;
+		blendTree->nodes[i].uCount = 1;
+
+		//create blend op for rotate
+
+		op.op = blendTree->nodes[i].blendOpSet->op_rotate;
+		op.v_out = &blendTree->nodes[i].pose_out->scale.r;
+
+		//fill conrols
+		for (int j = 0; j < blendTree->nodes[i].vCount; j++)
+		{
+			op.v_ctrl[j] = &blendTree->nodes[i].pose_ctrl[j]->scale.x;
+		}
+
+		for (int j = 0; j < blendTree->nodes[i].uCount; j++)
+		{
+			op.u[j] = blendTree->nodes[i].u[j];
+		}
+
+		op.vCount = blendTree->nodes[i].vCount;
+		op.uCount = blendTree->nodes[i].uCount;
+
+		op.exec = blendTree->nodes[i].blendOpSet->exec;
+		blendTree->nodes[i].blendOpSet->exec(&op);
 	}
 
 	return 0;
