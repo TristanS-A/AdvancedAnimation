@@ -728,7 +728,7 @@ void a3animation_init_animation(a3_DemoState const* demoState, a3_Scene_Animatio
 	scene->obj_teapot->scale.x = a3real_half;
 	scene->obj_teapot->scaleMode = 1;
 
-	//Create and load blend tree 1
+	//Create and load blend tree 1 - Tristan added
 	a3spatialPoseBlendTreeCreate(scene->newBlendTree, scene->hierarchyState_skel_base->hierarchy);
 
 	for (a3ui32 i = 0; i < scene->hierarchyState_skel_base->hierarchy->numNodes; i++)
@@ -739,7 +739,7 @@ void a3animation_init_animation(a3_DemoState const* demoState, a3_Scene_Animatio
 			scene->hierarchyState_skel_blend_idle_fm_blend->animPose->hpose_base + i, scene->blendOpLERP);
 	}
 
-	//Create and load blend tree 2
+	//Create and load blend tree 2 - Tristan added
 	a3spatialPoseBlendTreeCreate(scene->newBlendTree + 1, scene->hierarchyState_skel_base->hierarchy);
 
 	for (a3ui32 i = 0; i < scene->hierarchyState_skel_base->hierarchy->numNodes; i++)
@@ -747,7 +747,7 @@ void a3animation_init_animation(a3_DemoState const* demoState, a3_Scene_Animatio
 		a3spatialPoseBlendTreeConfigureNode(scene->newBlendTree + 1, i,
 			scene->hierarchyState_skel_blend_idle_fm_blend->animPose->hpose_base + i,
 			scene->hierarchyState_skel_blend_idle_p->animPose->hpose_base + i,
-			scene->hierarchyState_skel_blend_result->animPose->hpose_base + i, scene->blendOpCONCAT);
+			scene->hierarchyState_skel_blend_result->animPose->hpose_base + i, scene->blendOpLERP);
 	}
 
 	// effectors

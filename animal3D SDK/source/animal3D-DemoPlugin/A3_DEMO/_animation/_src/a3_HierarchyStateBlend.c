@@ -35,7 +35,7 @@
 
 //-----------------------------------------------------------------------------
 
-// create blend tree -- made by tristand edited by will
+// create blend tree -- made by tristan and edited by will
 a3ret a3spatialPoseBlendTreeCreate(a3_SpatialPoseBlendTree* blendTree, a3_Hierarchy const* blendTreeDescriptor)
 {
 	if (!blendTree || !blendTreeDescriptor)

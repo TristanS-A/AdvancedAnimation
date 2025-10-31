@@ -44,7 +44,7 @@ void a3animation_unload(a3_DemoState const* demoState, a3_Scene_Animation* scene
 		a3hierarchyStateRelease(scene->hierarchyState_skel_blend + i);
 	a3hierarchyRelease(scene->blendTree);
 
-	//Release both blend trees
+	//Release both blend trees - Tristan added
 	a3spatialPoseBlendTreeRelease(scene->newBlendTree);
 	a3spatialPoseBlendTreeRelease(scene->newBlendTree + 1);
 

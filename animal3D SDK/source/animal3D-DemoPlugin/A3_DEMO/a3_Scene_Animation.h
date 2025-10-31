@@ -204,7 +204,7 @@ extern "C"
 		// blend tree
 		a3_Hierarchy blendTree[1];
 
-		//Blend tree
+		//Blend tree - Tristan added
 		a3_SpatialPoseBlendTree newBlendTree[2];
 		union {
 			a3_HierarchyState hierarchyState_skel_blend[5];

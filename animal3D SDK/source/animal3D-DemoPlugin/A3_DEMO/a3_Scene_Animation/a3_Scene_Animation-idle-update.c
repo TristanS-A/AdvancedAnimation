@@ -233,6 +233,8 @@ void a3animation_update_animation_skeletal(
 	//Execute blend trees in order -- tristan blending
 
 	//scene->newBlendTree->blendTreeDescriptor->numNodes;
+
+	//Will added
 	BlendConstant blendConstants[67];
 	for (int i = 0; i < 67; i++)
 	{
@@ -241,6 +243,7 @@ void a3animation_update_animation_skeletal(
 		blendConstants[i].scaleU = a3real_half;
 	}
 
+	//Tristan added
 	a3spatialPoseBlendTreeMultiExecute(scene->newBlendTree, blendConstants);
 	a3spatialPoseBlendTreeExecute(scene->newBlendTree + 1, a3real_half);
 
