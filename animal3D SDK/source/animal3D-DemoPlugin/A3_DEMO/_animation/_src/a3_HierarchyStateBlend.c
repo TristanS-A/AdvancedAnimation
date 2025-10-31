@@ -35,7 +35,7 @@
 
 //-----------------------------------------------------------------------------
 
-// create blend tree
+// create blend tree -- made by tristand edited by will
 a3ret a3spatialPoseBlendTreeCreate(a3_SpatialPoseBlendTree* blendTree, a3_Hierarchy const* blendTreeDescriptor)
 {
 	if (!blendTree || !blendTreeDescriptor)
@@ -51,7 +51,7 @@ a3ret a3spatialPoseBlendTreeCreate(a3_SpatialPoseBlendTree* blendTree, a3_Hierar
 	return 0;
 }
 
-// release blend tree
+// release blend tree -- tristan did this one
 a3ret a3spatialPoseBlendTreeRelease(a3_SpatialPoseBlendTree* blendTree)
 {
 	if (!blendTree)
@@ -69,7 +69,7 @@ a3ret a3spatialPoseBlendTreeRelease(a3_SpatialPoseBlendTree* blendTree)
 	return 0;
 }
 
-// configure node internally; set pointers
+// configure node internally; set pointers -- tristan did this one
 a3ret a3spatialPoseBlendTreeConfigureNode(a3_SpatialPoseBlendTree const* blendTree, a3ui32 const nodeIndex,
 	a3_SpatialPose const* inPose1, a3_SpatialPose const* inPose2, a3_SpatialPose* outPose, const a3_BlendOpSet* blendOpSet)
 {
@@ -88,7 +88,7 @@ a3ret a3spatialPoseBlendTreeConfigureNode(a3_SpatialPoseBlendTree const* blendTr
 	return 0;
 }
 
-// does not execute tree from leaves to root
+// does not execute tree from leaves to root -- will did this one
 a3ret a3spatialPoseBlendTreeExecute(a3_SpatialPoseBlendTree const* blendTree, a3real u)
 {
 	if (!blendTree)
@@ -128,7 +128,7 @@ a3ret a3spatialPoseBlendTreeExecute(a3_SpatialPoseBlendTree const* blendTree, a3
 		blendTree->nodes[i].u[0] = &u;
 		blendTree->nodes[i].uCount = 1;
 
-		//create blend op for rotate
+		//create blend op for translate
 
 		op.op = blendTree->nodes[i].blendOpSet->op_rotate;
 		op.v_out = &blendTree->nodes[i].pose_out->translate.r;
@@ -155,7 +155,100 @@ a3ret a3spatialPoseBlendTreeExecute(a3_SpatialPoseBlendTree const* blendTree, a3
 		blendTree->nodes[i].u[0] = &u;
 		blendTree->nodes[i].uCount = 1;
 
+		//create blend op for scale
+
+		op.op = blendTree->nodes[i].blendOpSet->op_rotate;
+		op.v_out = &blendTree->nodes[i].pose_out->scale.r;
+
+		//fill conrols
+		for (int j = 0; j < blendTree->nodes[i].vCount; j++)
+		{
+			op.v_ctrl[j] = &blendTree->nodes[i].pose_ctrl[j]->scale.x;
+		}
+
+		for (int j = 0; j < blendTree->nodes[i].uCount; j++)
+		{
+			op.u[j] = blendTree->nodes[i].u[j];
+		}
+
+		op.vCount = blendTree->nodes[i].vCount;
+		op.uCount = blendTree->nodes[i].uCount;
+
+		op.exec = blendTree->nodes[i].blendOpSet->exec;
+		blendTree->nodes[i].blendOpSet->exec(&op);
+	}
+
+	return 0;
+}
+
+//will made
+a3ret a3spatialPoseBlendTreeMultiExecute(a3_SpatialPoseBlendTree const* blendTree, BlendConstant* u)
+{
+	if (!blendTree)
+		return -1;
+
+	//get the root node
+	a3_SpatialPoseBlendNode* root = blendTree->nodes;
+	a3_BlendOp op;
+	for (a3ui32 i = 0; i < blendTree->blendTreeDescriptor->numNodes; i++)
+	{
+		blendTree->nodes[i].u[0] = &u[i].rotationU;
+		blendTree->nodes[i].uCount = 1;
+
 		//create blend op for rotate
+
+		op.op = blendTree->nodes[i].blendOpSet->op_rotate;
+		op.v_out = &blendTree->nodes[i].pose_out->rotate.r;
+
+		//fill conrols
+		for (int j = 0; j < blendTree->nodes[i].vCount; j++)
+		{
+			op.v_ctrl[j] = &blendTree->nodes[i].pose_ctrl[j]->rotate.x;
+		}
+
+		for (int j = 0; j < blendTree->nodes[i].uCount; j++)
+		{
+			op.u[j] = blendTree->nodes[i].u[j];
+		}
+
+		op.vCount = blendTree->nodes[i].vCount;
+		op.uCount = blendTree->nodes[i].uCount;
+
+		op.exec = blendTree->nodes[i].blendOpSet->exec;
+		blendTree->nodes[i].blendOpSet->exec(&op);
+
+		//translation
+		blendTree->nodes[i].u[0] = &u[i].translationU;
+		blendTree->nodes[i].uCount = 1;
+
+		//create blend op for translate
+
+		op.op = blendTree->nodes[i].blendOpSet->op_rotate;
+		op.v_out = &blendTree->nodes[i].pose_out->translate.r;
+
+		//fill conrols
+		for (int j = 0; j < blendTree->nodes[i].vCount; j++)
+		{
+			op.v_ctrl[j] = &blendTree->nodes[i].pose_ctrl[j]->translate.x;
+		}
+
+		for (int j = 0; j < blendTree->nodes[i].uCount; j++)
+		{
+			op.u[j] = blendTree->nodes[i].u[j];
+		}
+
+		op.vCount = blendTree->nodes[i].vCount;
+		op.uCount = blendTree->nodes[i].uCount;
+
+		op.exec = blendTree->nodes[i].blendOpSet->exec;
+		blendTree->nodes[i].blendOpSet->exec(&op);
+
+
+		//scale
+		blendTree->nodes[i].u[0] = &u[i].scaleU;
+		blendTree->nodes[i].uCount = 1;
+
+		//create blend op for scale
 
 		op.op = blendTree->nodes[i].blendOpSet->op_rotate;
 		op.v_out = &blendTree->nodes[i].pose_out->scale.r;
@@ -191,57 +284,63 @@ a3real4r a3blendOpRET4(a3real4 v_out)
 
 a3real4r a3blendOpZERO4(a3real4 v_out)
 {
+	//will did
 	v_out[0] = 0;
 	v_out[1] = 0;
 	v_out[2] = 0;
-	v_out[3] = 0;
+	//v_out[3] = 0;
 
 	return v_out;
 }
 
 a3real4r a3blendOpONE4(a3real4 v_out)
 {
+	//will did
 	v_out[0] = 1;
 	v_out[1] = 1;
 	v_out[2] = 1;
-	v_out[3] = 1;
+	//v_out[3] = 1;
 
 	return v_out;
 }
 
 a3real4r a3blendOpID4(a3real4 v_out)
 {
+	//will did
 	v_out[0] = 0;
 	v_out[1] = 0;
 	v_out[2] = 0;
-	v_out[3] = 0;
+	//v_out[3] = 0;
 	return v_out;
 }
 
 a3real4r a3blendOpCOPY4(a3real4 v_out, a3real4 const v)
 {
+	//will did
 	v_out[0] = v[0];
 	v_out[1] = v[1];
 	v_out[2] = v[2];
-	v_out[3] = v[3];
+	//v_out[3] = v[3];
 	return v_out;
 }
 
 a3real4r a3blendOpNEGATE4(a3real4 v_out, a3real4 const v)
 {
+	//will did
 	v_out[0] = -v[0];
 	v_out[1] = -v[1];
 	v_out[2] = -v[2];
-	v_out[3] = -v[3];
+	//v_out[3] = -v[3];
 	return v_out;
 }
 
 a3real4r a3blendOpRECIP4(a3real4 v_out, a3real4 const v)
 {
+	//will did
 	v_out[0] = 1/v[0];
 	v_out[1] = 1/v[1];
 	v_out[2] = 1/v[2];
-	v_out[3] = 1/v[3];
+	//v_out[3] = 1/v[3];
 	return v_out;
 }
 
@@ -252,42 +351,47 @@ a3real4r a3blendOpCONJQ4(a3real4 v_out, a3real4 const v)
 
 a3real4r a3blendOpADD4(a3real4 v_out, a3real4 const v0, a3real4 const v1)
 {
-	v_out[0] = v0[0] + v1[0];
-	v_out[1] = v0[1] + v1[1];
-	v_out[2] = v0[2] + v1[2];
-	v_out[3] = v0[3] + v1[3];
+	//will did
+	v_out[0] = v0[0] + (v1[0] - v0[0]);
+	v_out[1] = v0[1] + (v1[1] - v0[1]);
+	v_out[2] = v0[2] + (v1[2] - v0[2]);
+	//v_out[3]v0[0] = v0[3] + v1[3];
 	return v_out;
 }
 
 a3real4r a3blendOpSUB4(a3real4 v_out, a3real4 const v0, a3real4 const v1)
 {
-	v_out[0] = v0[0] - v1[0];
-	v_out[1] = v0[1] - v1[1];
-	v_out[2] = v0[2] - v1[2];
-	v_out[3] = v0[3] - v1[3];
+	//will didi
+	v_out[0] =  v0[0] + (v0[0] - v1[0]);
+	v_out[1] =  v0[1] + (v0[1] - v1[1]);
+	v_out[2] =  v0[2] + (v0[2] - v1[2]);
+	//v_out[3]  v0[0]+ (= v0[3] - v1[)3];
 	return v_out;
 }
 
 a3real4r a3blendOpMUL4(a3real4 v_out, a3real4 const v0, a3real4 const v1)
 {
-	v_out[0] = v0[0] * v1[0];
-	v_out[1] = v0[1] * v1[1];
-	v_out[2] = v0[2] * v1[2];
-	v_out[3] = v0[3] * v1[3];
+	//will did 
+	v_out[0] = v0[0] * (v1[0] - v0[0]);
+	v_out[1] = v0[1] * (v1[1] - v0[1]);
+	v_out[2] = v0[2] * (v1[2] - v0[2]);
+	//v_out[v0[0] * 3] (* v1[)] - = v0[ 3];
 	return v_out;
 }
 
 a3real4r a3blendOpDIV4(a3real4 v_out, a3real4 const v0, a3real4 const v1)
 {
+	//will did
 	v_out[0] = v0[0] / v1[0];
 	v_out[1] = v0[1] / v1[1];
 	v_out[2] = v0[2] / v1[2];
-	v_out[3] = v0[3] / v1[3];
+	//v_out[3] = v0[3] / v1[3];
 	return v_out;
 }
 
 a3real4r a3blendOpMULQ4(a3real4 v_out, a3real4 const v0, a3real4 const v1)
 {
+	
 	return v_out;
 }
 
@@ -298,27 +402,30 @@ a3real4r a3blendOpMULCONJQ4(a3real4 v_out, a3real4 const v0, a3real4 const v1)
 
 a3real4r a3blendOpSCALE4(a3real4 v_out, a3real4 const v, a3real const u)
 {
+	//will did 
 	v_out[0] = v[0] * u;
 	v_out[1] = v[1] * u;
 	v_out[2] = v[2] * u;
-	v_out[3] = v[3] * u;
+	//v_out[3] = v[3] * u;
 	return v_out;
 }
 
 extern float powf(float b, float e);//#include <math.h>
 a3real4r a3blendOpPOW4(a3real4 v_out, a3real4 const v, a3real const u)
 {
+	//will did
 
 	v_out[0] = powf(v[0], u);
 	v_out[1] = powf(v[1], u);
 	v_out[2] = powf(v[2], u);
-	v_out[3] = powf(v[3], u);
+	//v_out[3] = powf(v[3], u);
 
 	return v_out;
 }
 
 a3real4r a3blendOpNEAR4(a3real4 v_out, a3real4 const v0, a3real4 const v1, a3real const u)
 {
+	//will did
 	if (u < 0.5)
 	{
 		a3real4Set(v_out, v0[0], v0[1], v0[2], v0[3]);
@@ -334,6 +441,7 @@ a3real4r a3blendOpNEAR4(a3real4 v_out, a3real4 const v0, a3real4 const v1, a3rea
 
 a3real4r a3blendOpLERP4(a3real4 v_out, a3real4 const v0, a3real4 const v1, a3real const u)
 {
+	//will did
 	 v_out[0] = (v1[0] - v0[0]) * u + v0[0];
 	 v_out[1] = (v1[1] - v0[1]) * u + v0[1];
 	 v_out[2] = (v1[2] - v0[2]) * u + v0[2];
@@ -512,10 +620,9 @@ a3_HierarchyPose* a3hierarchyPoseOpIdentity(a3_HierarchyPose* pose_out)
 }
 
 extern float powf(float b, float e);//#include <math.h>
-// pointer-based LERP operation for hierarchical pose
+// pointer-based LERP operation for hierarchical pose -- will did
 a3_HierarchyPose* a3hierarchyPoseOpLERP(a3_HierarchyPose* pose_out, a3_HierarchyPose const* pose0, a3_HierarchyPose const* pose1, a3real const u)
 {
-	//mising a node group?
 	//a3hierarchyPoseLerp(pose_out, pose0, pose1, u)
 
 	 //angles: lerp is ok for the purposes of what we're doing

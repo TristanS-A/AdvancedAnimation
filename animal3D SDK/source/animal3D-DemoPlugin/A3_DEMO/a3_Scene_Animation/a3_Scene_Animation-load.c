@@ -747,7 +747,7 @@ void a3animation_init_animation(a3_DemoState const* demoState, a3_Scene_Animatio
 		a3spatialPoseBlendTreeConfigureNode(scene->newBlendTree + 1, i,
 			scene->hierarchyState_skel_blend_idle_fm_blend->animPose->hpose_base + i,
 			scene->hierarchyState_skel_blend_idle_p->animPose->hpose_base + i,
-			scene->hierarchyState_skel_blend_result->animPose->hpose_base + i, scene->blendOpLERP);
+			scene->hierarchyState_skel_blend_result->animPose->hpose_base + i, scene->blendOpCONCAT);
 	}
 
 	// effectors

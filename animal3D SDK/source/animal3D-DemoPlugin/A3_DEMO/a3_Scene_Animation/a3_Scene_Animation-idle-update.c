@@ -230,8 +230,18 @@ void a3animation_update_animation_skeletal(
 	//	scene->hierarchyState_skel_blend_idle_m->animPose,							// src(1): idle_m
 	//	a3real_half, activeHS->hierarchy->numNodes);
 
-	//Execute blend trees in order
-	a3spatialPoseBlendTreeExecute(scene->newBlendTree, a3real_half);
+	//Execute blend trees in order -- tristan blending
+
+	//scene->newBlendTree->blendTreeDescriptor->numNodes;
+	BlendConstant blendConstants[67];
+	for (int i = 0; i < 67; i++)
+	{
+		blendConstants[i].rotationU = a3real_half;
+		blendConstants[i].translationU = a3real_half;
+		blendConstants[i].scaleU = a3real_half;
+	}
+
+	a3spatialPoseBlendTreeMultiExecute(scene->newBlendTree, blendConstants);
 	a3spatialPoseBlendTreeExecute(scene->newBlendTree + 1, a3real_half);
 
 

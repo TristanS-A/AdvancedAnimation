@@ -66,6 +66,14 @@ typedef struct a3_BlendOp
 	a3ui16 vCount, uCount;							// control and input counts
 } a3_BlendOp;
 
+//will added
+typedef struct BlendConstant
+{
+	a3real translationU;
+	a3real rotationU;
+	a3real scaleU;
+}BlendConstant;
+
 
 // set of operations for spatial pose
 typedef struct a3_BlendOpSet
@@ -168,6 +176,7 @@ a3ret a3spatialPoseBlendTreeConfigureNode(a3_SpatialPoseBlendTree const* blendTr
 
 // execute tree from leaves to root
 a3ret a3spatialPoseBlendTreeExecute(a3_SpatialPoseBlendTree const* blendTree, a3real u);
+a3ret a3spatialPoseBlendTreeMultiExecute(a3_SpatialPoseBlendTree const* blendTree, BlendConstant* u);
 
 
 //-----------------------------------------------------------------------------
